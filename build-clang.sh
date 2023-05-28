@@ -44,7 +44,14 @@ clone_tc(){
     else
         echo -e "${YELLOW}===> ${BLUE}Downloading kucing Clang${WHITE}"
         mkdir -p ${TOOLCHAIN}
-        wget -q https://github.com/Diaz1401/clang/releases/download/${CLANG_VERSION}/clang.tar.zst
+        if [ -z ${CLANG_VERSION} ]; then
+            curl -s https://api.github.com/repos/Diaz1401/clang/releases/latest |
+                grep "browser_download_url" |
+                cut -d '"' -f4 |
+                wget -qO clang.tar.zst -i -
+        else
+            wget -qO clang.tar.zst https://github.com/Diaz1401/clang/releases/download/${CLANG_VERSION}/clang.tar.zst
+        fi
         tar xf clang.tar.zst -C ${TOOLCHAIN}
     fi
 }

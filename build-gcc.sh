@@ -40,10 +40,19 @@ export PATH="${TOOLCHAIN}/bin:${PATH}"
 # Clone GCC Compiler
 clone_tc(){
     if [[ -a ${TOOLCHAIN} ]]; then
-        echo -e "${YELLOW}===> ${BLUE}GCC exist${WHITE}"
+        echo -e "${YELLOW}===> ${BLUE}CAT GCC exist${WHITE}"
     else
+        echo -e "${YELLOW}===> ${BLUE}Downloading CAT GCC${WHITE}"
         mkdir -p ${TOOLCHAIN}
-        git clone https://github.com/Diaz1401/gcc-arm64 --depth 1 -b gcc-${GCC_VERSION} ${TOOLCHAIN}
+        if [ -z ${GCC_VERSION} ]; then
+            curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest |
+                grep "browser_download_url" |
+                cut -d '"' -f4 |
+                wget -qO gcc.tar.zst -i -
+        else
+            wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc/releases/download/${GCC_VERSION}/gcc.tar.zst
+        fi
+        tar xf gcc.tar.zst -C ${TOOLCHAIN}
     fi
 }
 
