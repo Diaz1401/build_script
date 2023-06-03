@@ -124,8 +124,8 @@ miui_patch(){
 # build_kernel
 build_kernel(){
     cd ${KERNEL_DIR}
-    rm -rf out
-    mkdir -p out
+#    rm -rf out
+#    mkdir -p out
     if [[ $1 == miui ]]; then
         miui_patch
     fi
