@@ -132,7 +132,7 @@ build_kernel(){
     BUILD_START=$(date +"%s")
     make O=out cat_defconfig
     make -j$(nproc --all) O=out \
-        CROSS_COMPILE=aarch64-elf- |& tee $LOG
+        CROSS_COMPILE=aarch64-elf-rel- |& tee $LOG
     BUILD_END=$(date +"%s")
     DIFF=$((BUILD_END - BUILD_START))
 }
