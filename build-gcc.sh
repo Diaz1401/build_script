@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Copyright (c) 2021 CloudedQuartz
-# Copyright (c) 2021-2022 Diaz1401
+# Copyright (c) 2021-2023 Diaz1401
 
 # Silence all safe.directory warnings
 git config --global --add safe.directory '*'
@@ -46,6 +46,11 @@ clone_tc(){
         mkdir -p ${TOOLCHAIN}
         if [ -z ${GCC_VERSION} ]; then
             curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest |
+                grep "browser_download_url" |
+                cut -d '"' -f4 |
+                wget -qO gcc.tar.zst -i -
+        elif [ "${GCC_VERSION}" == "stable" ]; then
+            curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest |
                 grep "browser_download_url" |
                 cut -d '"' -f4 |
                 wget -qO gcc.tar.zst -i -
