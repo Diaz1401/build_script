@@ -1,188 +1,218 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2023 Diaz1401
 
+ARG=$@
+ERRORMSG="\nusage: ./build-gcc.sh argument\navailable argument:\n  pgo, enable Profile Guided Optimization\n  gcov, enable gcov profiling\n  stable, latest Release GCC\n  stable-TAG, spesific Release GCC tag\n  beta, latest Bleeding Edge GCC\n  beta-TAG, spesific Bleeding Edge GCC tag\n\nvalid GCC tag:\n  https://github.com/Diaz1401/gcc-stable/releases\n  https://github.com/Diaz1401/gcc/releases\n"
+if [ -z "$ARG" ]; then
+  echo -e $ERRORMSG
+  exit 1
+else
+  for i in ${ARG}; do
+    case "${i}" in
+      pgo) PGO=true;;
+      gcov) GCOV=true;;
+      stable) STABLE=true;;
+      stable-*) STABLE=$(echo "${i}" | sed s/stable-//g);;
+      beta) BETA=true;;
+      beta-*) BETA=$(echo "${i}" | sed s/beta-//g);;
+      *) echo -e $ERRORMSG; exit 1;;
+    esac
+  done
+  if [ ! -z "${PGO}" ] && [ ! -z "${GCOV}" ]; then
+    echo "do not use both gcov and pgo"
+    exit 1
+  elif [ ! -z "${STABLE}" ] && [ ! -z "${BETA}" ]; then
+    echo "do not use both GCC stable and beta"
+    exit 1
+  elif [ "${STABLE}" == "true" ] || [ "${BETA}" == "true" ]; then
+    USE_LATEST=true
+  fi
+fi
+
 # Silence all safe.directory warnings
 git config --global --add safe.directory '*'
 
-KERNEL_NAME=Kucing
-KERNEL_DIR=$(pwd)
-AK3=${KERNEL_DIR}/AnyKernel3
-TOOLCHAIN=${KERNEL_DIR}/gcc
-LOG=${KERNEL_DIR}/log.txt
-KERNEL_DTB=${KERNEL_DIR}/out/arch/arm64/boot/dtb
-KERNEL_IMG=${KERNEL_DIR}/out/arch/arm64/boot/Image
-KERNEL_IMG_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image-dtb
-KERNEL_IMG_GZ_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb
-KERNEL_DTBO=${KERNEL_DIR}/out/arch/arm64/boot/dtbo.img
-TG_CHAT_ID=-1001180467256
-TG_BOT_TOKEN=${TELEGRAM_TOKEN}
-DATE_NAME=$(date +"%Y%m%d")
-COMMIT=$(git log --pretty=format:"%s" -1)
-COMMIT_SHA=$(git rev-parse --short HEAD)
-KERNEL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-BUILD_DATE=$(date)
-
-GCC_VERSION=${1}
-
-# Colors
-WHITE='\033[0m'
-RED='\033[1;31m'
-GREEN='\033[1;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[1;34m'
-
+export KERNEL_NAME=Kucing
+export KERNEL_DIR=$(pwd)
+export AK3=${KERNEL_DIR}/AnyKernel3
+export TOOLCHAIN=${KERNEL_DIR}/gcc
+export LOG=${KERNEL_DIR}/log.txt
+export KERNEL_DTB=${KERNEL_DIR}/out/arch/arm64/boot/dtb
+export KERNEL_IMG=${KERNEL_DIR}/out/arch/arm64/boot/Image
+export KERNEL_IMG_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image-dtb
+export KERNEL_IMG_GZ_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb
+export KERNEL_DTBO=${KERNEL_DIR}/out/arch/arm64/boot/dtbo.img
+export TG_CHAT_ID=-1001180467256
+export TG_BOT_TOKEN=${TELEGRAM_TOKEN}
+export DATE_NAME=$(date +"%Y%m%d")
+export COMMIT=$(git log --pretty=format:"%s" -1)
+export COMMIT_SHA=$(git rev-parse --short HEAD)
+export KERNEL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+export BUILD_DATE=$(date)
 export KBUILD_BUILD_USER=Diaz
 export PATH="${TOOLCHAIN}/bin:${PATH}"
+
+# Colors
+export WHITE='\033[0m'
+export RED='\033[1;31m'
+export GREEN='\033[1;32m'
+export YELLOW='\033[1;33m'
+export BLUE='\033[1;34m'
 
 #
 # Clone GCC Compiler
 clone_tc(){
-    if [[ -a ${TOOLCHAIN} ]]; then
-        echo -e "${YELLOW}===> ${BLUE}CAT GCC exist${WHITE}"
+  if [[ -a ${TOOLCHAIN} ]]; then
+    echo -e "${YELLOW}===> ${BLUE}CAT GCC exist${WHITE}"
+  else
+    echo -e "${YELLOW}===> ${BLUE}Downloading CAT GCC${WHITE}"
+    mkdir -p ${TOOLCHAIN}
+    if [ "${USE_LATEST}" == "true" ]; then
+      if [ ! -z "${STABLE}"]; then
+        curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
+      else
+        curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
+      fi
     else
-        echo -e "${YELLOW}===> ${BLUE}Downloading CAT GCC${WHITE}"
-        mkdir -p ${TOOLCHAIN}
-        if [ -z ${GCC_VERSION} ]; then
-            curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest |
-                grep "browser_download_url" |
-                cut -d '"' -f4 |
-                wget -qO gcc.tar.zst -i -
-        elif [ "${GCC_VERSION}" == "stable" ]; then
-            curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest |
-                grep "browser_download_url" |
-                cut -d '"' -f4 |
-                wget -qO gcc.tar.zst -i -
-        else
-            wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc/releases/download/${GCC_VERSION}/gcc.tar.zst
-        fi
-        tar xf gcc.tar.zst -C ${TOOLCHAIN}
+      if [ ! -z "${STABLE}"]; then
+        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${STABLE}/gcc.tar.zst
+      else
+        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc/releases/download/${BETA}/gcc.tar.zst
+      fi
     fi
+    tar xf gcc.tar.zst -C ${TOOLCHAIN}
+  fi
 }
 
 #
 # Clones anykernel
 clone_ak(){
-    if [[ -a ${AK3} ]]; then
-        echo -e "${YELLOW}===> ${BLUE}AnyKernel3 exist${WHITE}"
-        echo -e "${YELLOW}===> ${BLUE}Try to update repo${WHITE}"
-        pushd ${AK3}
-        git pull
-        popd
-    else
-        echo -e "${YELLOW}===> ${BLUE}Cloning AnyKernel3${WHITE}"
-        git clone -q --depth 1 https://github.com/Diaz1401/AnyKernel3.git -b alioth ${AK3}
-    fi
+  if [[ -a ${AK3} ]]; then
+    echo -e "${YELLOW}===> ${BLUE}AnyKernel3 exist${WHITE}"
+    echo -e "${YELLOW}===> ${BLUE}Try to update repo${WHITE}"
+    pushd ${AK3}
+    git pull
+    popd
+  else
+    echo -e "${YELLOW}===> ${BLUE}Cloning AnyKernel3${WHITE}"
+    git clone -q --depth 1 https://github.com/Diaz1401/AnyKernel3.git -b alioth ${AK3}
+  fi
 }
 
 #
 # tg_sendinfo - sends text to telegram
 tg_sendinfo(){
-    if [[ $1 == miui ]]; then
-        CAPTION=$(echo -e \
-        "MIUI Build started
-Date: <code>${BUILD_DATE}</code>
-HEAD: <code>${COMMIT_SHA}</code>
-Commit: <code>${COMMIT}</code>
-Branch: <code>${KERNEL_BRANCH}</code>
-")
-    else
+  if [[ $1 == miui ]]; then
     CAPTION=$(echo -e \
-        "Build started
+    "MIUI Build started
 Date: <code>${BUILD_DATE}</code>
 HEAD: <code>${COMMIT_SHA}</code>
 Commit: <code>${COMMIT}</code>
 Branch: <code>${KERNEL_BRANCH}</code>
 ")
-    fi
-    curl -s "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
-        -F parse_mode=html \
-        -F text="${CAPTION}" \
-        -F chat_id=${TG_CHAT_ID} &> /dev/null
+  else
+    CAPTION=$(echo -e \
+    "Build started
+Date: <code>${BUILD_DATE}</code>
+HEAD: <code>${COMMIT_SHA}</code>
+Commit: <code>${COMMIT}</code>
+Branch: <code>${KERNEL_BRANCH}</code>
+")
+  fi
+  curl -s "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+    -F parse_mode=html \
+    -F text="${CAPTION}" \
+    -F chat_id="${TG_CHAT_ID}" > /dev/null 2>&1
 }
 
 #
 # tg_pushzip - uploads final zip to telegram
 tg_pushzip(){
-    curl -F document=@"$1"  "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
-        -F chat_id=$TG_CHAT_ID \
-        -F caption="$2" \
-        -F parse_mode=html &> /dev/null
+  curl -F document=@"$1"  "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
+    -F chat_id=$TG_CHAT_ID \
+    -F caption="$2" \
+    -F parse_mode=html > /dev/null 2>&1
 }
 
 #
 # tg_log - uploads build log to telegram
 tg_log(){
-    curl -F document=@"$LOG"  "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
-        -F chat_id=$TG_CHAT_ID \
-        -F parse_mode=html &> /dev/null
+  curl -F document=@"$LOG"  "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
+    -F chat_id=$TG_CHAT_ID \
+    -F parse_mode=html > /dev/null 2>&1
 }
 
 #
 # miui_patch - apply custom patch before build
 miui_patch(){
-    git apply patch/miui-panel-dimension.patch
+  git apply patch/miui-panel-dimension.patch
 }
 
 #
 # build_kernel
 build_kernel(){
-    cd ${KERNEL_DIR}
-#    rm -rf out
-#    mkdir -p out
-    if [[ $1 == miui ]]; then
-        miui_patch
-    fi
-    BUILD_START=$(date +"%s")
-    make O=out cat_defconfig
-    make -j$(nproc --all) O=out \
-        CROSS_COMPILE=aarch64-elf- |& tee $LOG
-    BUILD_END=$(date +"%s")
-    DIFF=$((BUILD_END - BUILD_START))
+  cd ${KERNEL_DIR}
+#  rm -rf out
+#  mkdir -p out
+  if [[ $1 == miui ]]; then
+    miui_patch
+  fi
+  BUILD_START=$(date +"%s")
+  make O=out cat_defconfig
+  if [ "$GCOV" == "true" ]; then
+    ./scripts/config --file arch/arm64/configs/vendor/xiaomi/kona-custom.config -e GCOV_KERNEL -e GCOV_PROFILE_ALL
+  elif [ "$PGO" == "true" ]; then
+    ./scripts/config --file arch/arm64/configs/vendor/xiaomi/kona-custom.config -e PGO
+  fi
+  make -j$(nproc --all) O=out \
+    CROSS_COMPILE=aarch64-elf- |& tee $LOG
+  BUILD_END=$(date +"%s")
+  DIFF=$((BUILD_END - BUILD_START))
 }
 
 #
 # build_end - creates and sends zip
 build_end(){
-    rm -rf ${AK3}/Kucing* ${AK3}/MIUI-Kucing* ${AK3}/dtb* ${AK3}/Image*
-    if [[ -a ${KERNEL_IMG_GZ_DTB} ]]; then
-        mv ${KERNEL_IMG_GZ_DTB} ${AK3}
-    elif [[ -a {$KERNEL_IMG_DTB} ]]; then
-        mv ${KERNEL_IMG_DTB} ${AK3}
-    elif [[ -a ${KERNEL_IMG} ]]; then
-        mv ${KERNEL_IMG} ${AK3}
-    else
+  rm -rf ${AK3}/Kucing* ${AK3}/MIUI-Kucing* ${AK3}/dtb* ${AK3}/Image*
+  if [[ -a ${KERNEL_IMG_GZ_DTB} ]]; then
+    mv ${KERNEL_IMG_GZ_DTB} ${AK3}
+  elif [[ -a {$KERNEL_IMG_DTB} ]]; then
+    mv ${KERNEL_IMG_DTB} ${AK3}
+  elif [[ -a ${KERNEL_IMG} ]]; then
+    mv ${KERNEL_IMG} ${AK3}
+  else
     echo -e "${YELLOW}===> ${RED}Build failed, sad${WHITE}"
     echo -e "${YELLOW}===> ${GREEN}Send build log to Telegram${WHITE}"
     tg_log
     exit 1
-    fi
-    echo -e "${YELLOW}===> ${GREEN}Build success, generating flashable zip...${WHITE}"
-    find ${KERNEL_DIR}/out/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + > ${KERNEL_DIR}/out/arch/arm64/boot/dtb
-    ls ${KERNEL_DIR}/out/arch/arm64/boot/
-    cp ${KERNEL_DTBO} ${AK3}
-    cp ${KERNEL_DTB} ${AK3}
-    cd ${AK3}
-    DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE_NAME}-${COMMIT_SHA}.img
-    DTB_NAME=${KERNEL_NAME}-DTB-${DATE_NAME}-${COMMIT_SHA}
-    if [[ $1 == miui ]]; then
-        ZIP_NAME=MIUI-${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
-    else
-        ZIP_NAME=${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
-    fi
-    zip -r9 ${ZIP_NAME} * -x .git .github LICENSE README.md
-    mv ${KERNEL_DTBO} ${AK3}/${DTBO_NAME}
-    mv ${KERNEL_DTB} ${AK3}/${DTB_NAME}
-    echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
-    tg_pushzip ${ZIP_NAME} "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
-    echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
-    echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
-    tg_pushzip ${DTBO_NAME}
-    echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
-    tg_pushzip ${DTB_NAME}
-    echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
-    tg_log
+  fi
+  echo -e "${YELLOW}===> ${GREEN}Build success, generating flashable zip...${WHITE}"
+  find ${KERNEL_DIR}/out/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + > ${KERNEL_DIR}/out/arch/arm64/boot/dtb
+  ls ${KERNEL_DIR}/out/arch/arm64/boot/
+  cp ${KERNEL_DTBO} ${AK3}
+  cp ${KERNEL_DTB} ${AK3}
+  cd ${AK3}
+  DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE_NAME}-${COMMIT_SHA}.img
+  DTB_NAME=${KERNEL_NAME}-DTB-${DATE_NAME}-${COMMIT_SHA}
+  if [[ $1 == miui ]]; then
+    ZIP_NAME=MIUI-${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
+  else
+    ZIP_NAME=${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
+  fi
+  zip -r9 ${ZIP_NAME} * -x .git .github LICENSE README.md
+  mv ${KERNEL_DTBO} ${AK3}/${DTBO_NAME}
+  mv ${KERNEL_DTB} ${AK3}/${DTB_NAME}
+  echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
+  tg_pushzip ${ZIP_NAME} "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
+  echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
+#  echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
+#  tg_pushzip ${DTBO_NAME}
+#  echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
+#  tg_pushzip ${DTB_NAME}
+#  echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
+  tg_log
 }
 
 COMMIT=$(git log --pretty=format:"%s" -1)
@@ -200,10 +230,10 @@ Branch: <code>$KERNEL_BRANCH</code>
 #
 # build_all - run build script
 build_all(){
-    FLAG=$1
-    tg_sendinfo ${FLAG}
-    build_kernel ${FLAG}
-    build_end ${FLAG}
+  FLAG=$1
+  tg_sendinfo ${FLAG}
+  build_kernel ${FLAG}
+  build_end ${FLAG}
 }
 
 #
