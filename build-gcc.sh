@@ -4,13 +4,14 @@
 # Copyright (c) 2021-2023 Diaz1401
 
 ARG=$@
-ERRORMSG="\nusage: ./build-gcc.sh argument\navailable argument:\n  pgo, enable Profile Guided Optimization\n  gcov, enable gcov profiling\n  stable, latest Release GCC\n  stable-TAG, spesific Release GCC tag\n  beta, latest Bleeding Edge GCC\n  beta-TAG, spesific Bleeding Edge GCC tag\n\nvalid GCC tag:\n  https://github.com/Diaz1401/gcc-stable/releases\n  https://github.com/Diaz1401/gcc/releases\n"
+ERRORMSG="\nusage: ./build-gcc.sh argument\navailable argument:\n  lto, enable LTO GCC\n  pgo, enable Profile Guided Optimization\n  gcov, enable gcov profiling\n  stable, latest Release GCC\n  stable-TAG, spesific Release GCC tag\n  beta, latest Bleeding Edge GCC\n  beta-TAG, spesific Bleeding Edge GCC tag\n\nvalid GCC tag:\n  https://github.com/Diaz1401/gcc-stable/releases\n  https://github.com/Diaz1401/gcc/releases\n"
 if [ -z "$ARG" ]; then
   echo -e $ERRORMSG
   exit 1
 else
   for i in ${ARG}; do
     case "${i}" in
+      lto) LTO=true;;
       pgo) PGO=true;;
       gcov) GCOV=true;;
       stable) STABLE=true;;
@@ -160,12 +161,14 @@ build_kernel(){
     miui_patch
   fi
   BUILD_START=$(date +"%s")
-  make O=out cat_defconfig
-  if [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/vendor/xiaomi/kona-custom.config -e GCOV_KERNEL -e GCOV_PROFILE_ALL
+  if [ "$LTO" == "true" ]; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC
+  elif [ "$GCOV" == "true" ]; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL
   elif [ "$PGO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/vendor/xiaomi/kona-custom.config -e PGO
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO
   fi
+  make O=out cat_defconfig
   make -j$(nproc --all) O=out \
     CROSS_COMPILE=aarch64-elf- |& tee $LOG
   BUILD_END=$(date +"%s")
