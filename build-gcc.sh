@@ -31,6 +31,7 @@ else
     USE_LATEST=true
   fi
 fi
+export LTO PGO GCOV STABLE BETA USE_LATEST
 
 # Silence all safe.directory warnings
 git config --global --add safe.directory '*'
@@ -71,13 +72,13 @@ clone_tc(){
     echo -e "${YELLOW}===> ${BLUE}Downloading CAT GCC${WHITE}"
     mkdir -p ${TOOLCHAIN}
     if [ "${USE_LATEST}" == "true" ]; then
-      if [ ! -z "${STABLE}"]; then
+      if [ ! -z "${STABLE}" ]; then
         curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
       else
         curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
       fi
     else
-      if [ ! -z "${STABLE}"]; then
+      if [ ! -z "${STABLE}" ]; then
         wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${STABLE}/gcc.tar.zst
       else
         wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc/releases/download/${BETA}/gcc.tar.zst
@@ -103,8 +104,8 @@ clone_ak(){
 }
 
 #
-# tg_sendinfo - sends text to telegram
-tg_sendinfo(){
+# send_info - sends text to telegram
+send_info(){
   if [[ $1 == miui ]]; then
     CAPTION=$(echo -e \
     "MIUI Build started
@@ -129,8 +130,8 @@ Branch: <code>${KERNEL_BRANCH}</code>
 }
 
 #
-# tg_pushzip - uploads final zip to telegram
-tg_pushzip(){
+# send_file - uploads file to telegram
+send_file(){
   curl -F document=@"$1"  "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
     -F chat_id=$TG_CHAT_ID \
     -F caption="$2" \
@@ -138,9 +139,9 @@ tg_pushzip(){
 }
 
 #
-# tg_log - uploads build log to telegram
-tg_log(){
-  curl -F document=@"$LOG"  "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
+# send_file_nocap - uploads file to telegram without caption
+send_file_nocap(){
+  curl -F document=@"$1"  "https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument" \
     -F chat_id=$TG_CHAT_ID \
     -F parse_mode=html > /dev/null 2>&1
 }
@@ -188,7 +189,7 @@ build_end(){
   else
     echo -e "${YELLOW}===> ${RED}Build failed, sad${WHITE}"
     echo -e "${YELLOW}===> ${GREEN}Send build log to Telegram${WHITE}"
-    tg_log
+    send_file $LOG "$ZIP_NAME log"
     exit 1
   fi
   echo -e "${YELLOW}===> ${GREEN}Build success, generating flashable zip...${WHITE}"
@@ -199,23 +200,29 @@ build_end(){
   cd ${AK3}
   DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE_NAME}-${COMMIT_SHA}.img
   DTB_NAME=${KERNEL_NAME}-DTB-${DATE_NAME}-${COMMIT_SHA}
-  if [[ $1 == miui ]]; then
-    ZIP_NAME=MIUI-${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
-  else
-    ZIP_NAME=${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
+  ZIP_NAME=${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
+  if [ "${LTO}" == "true" ]; then
+    ZIP_NAME=LTO-${ZIP_NAME}
+  elif [ "${PGO}" == "true" ]; then
+    ZIP_NAME=PGO-${ZIP_NAME}
+  elif [ "${GCOV}" == "true" ]; then
+    ZIP_NAME=GCOV-${ZIP_NAME}
+  elif [ "${1}" == "miui" ]; then
+    ZIP_NAME=MIUI-${ZIP_NAME}
   fi
   zip -r9 ${ZIP_NAME} * -x .git .github LICENSE README.md
   mv ${KERNEL_DTBO} ${AK3}/${DTBO_NAME}
   mv ${KERNEL_DTB} ${AK3}/${DTB_NAME}
   echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
-  tg_pushzip ${ZIP_NAME} "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
+  send_file ${ZIP_NAME} "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
   echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
+  send_file ${KERNEL_DIR}/out/.config "$ZIP_NAME defconfig"
 #  echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
-#  tg_pushzip ${DTBO_NAME}
+#  send_file ${DTBO_NAME}
 #  echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
-#  tg_pushzip ${DTB_NAME}
+#  send_file ${DTB_NAME}
 #  echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
-  tg_log
+  send_file $LOG "$ZIP_NAME log"
 }
 
 COMMIT=$(git log --pretty=format:"%s" -1)
@@ -234,7 +241,7 @@ Branch: <code>$KERNEL_BRANCH</code>
 # build_all - run build script
 build_all(){
   FLAG=$1
-  tg_sendinfo ${FLAG}
+  send_info ${FLAG}
   build_kernel ${FLAG}
   build_end ${FLAG}
 }
