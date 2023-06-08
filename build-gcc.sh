@@ -23,13 +23,12 @@ else
   done
   if [ ! -z "${PGO}" ] && [ ! -z "${GCOV}" ]; then
     echo "do not use both gcov and pgo"
-    exit 1
-  elif [ ! -z "${STABLE}" ] && [ ! -z "${BETA}" ]; then
+    exit 1; fi
+  if [ ! -z "${STABLE}" ] && [ ! -z "${BETA}" ]; then
     echo "do not use both GCC stable and beta"
-    exit 1
-  elif [ "${STABLE}" == "true" ] || [ "${BETA}" == "true" ]; then
-    USE_LATEST=true
-  fi
+    exit 1; fi
+  if [ "${STABLE}" == "true" ] || [ "${BETA}" == "true" ]; then
+    USE_LATEST=true; fi
 fi
 export LTO PGO GCOV STABLE BETA USE_LATEST
 
@@ -163,12 +162,11 @@ build_kernel(){
   fi
   BUILD_START=$(date +"%s")
   if [ "$LTO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC
-  elif [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL
-  elif [ "$PGO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO
-  fi
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC; fi
+  if [ "$GCOV" == "true" ]; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
+  if [ "$PGO" == "true" ]; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO; fi
   make O=out cat_defconfig
   make -j$(nproc --all) O=out \
     CROSS_COMPILE=aarch64-elf- |& tee $LOG
@@ -202,14 +200,13 @@ build_end(){
   DTB_NAME=${KERNEL_NAME}-DTB-${DATE_NAME}-${COMMIT_SHA}
   ZIP_NAME=${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
   if [ "${LTO}" == "true" ]; then
-    ZIP_NAME=LTO-${ZIP_NAME}
-  elif [ "${PGO}" == "true" ]; then
-    ZIP_NAME=PGO-${ZIP_NAME}
-  elif [ "${GCOV}" == "true" ]; then
-    ZIP_NAME=GCOV-${ZIP_NAME}
-  elif [ "${1}" == "miui" ]; then
-    ZIP_NAME=MIUI-${ZIP_NAME}
-  fi
+    ZIP_NAME=LTO-${ZIP_NAME}; fi
+  if [ "${PGO}" == "true" ]; then
+    ZIP_NAME=PGO-${ZIP_NAME}; fi
+  if [ "${GCOV}" == "true" ]; then
+    ZIP_NAME=GCOV-${ZIP_NAME}; fi
+  if [ "${1}" == "miui" ]; then
+    ZIP_NAME=MIUI-${ZIP_NAME}; fi
   zip -r9 ${ZIP_NAME} * -x .git .github LICENSE README.md
   mv ${KERNEL_DTBO} ${AK3}/${DTBO_NAME}
   mv ${KERNEL_DTB} ${AK3}/${DTB_NAME}
