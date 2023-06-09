@@ -4,13 +4,14 @@
 # Copyright (c) 2021-2023 Diaz1401
 
 ARG=$@
-ERRORMSG="\nusage: ./build-gcc.sh argument\navailable argument:\n  lto, enable LTO GCC\n  pgo, enable Profile Guided Optimization\n  gcov, enable gcov profiling\n  stable, latest Release GCC\n  stable-TAG, spesific Release GCC tag\n  beta, latest Bleeding Edge GCC\n  beta-TAG, spesific Bleeding Edge GCC tag\n\nvalid GCC tag:\n  https://github.com/Diaz1401/gcc-stable/releases\n  https://github.com/Diaz1401/gcc/releases\n"
+ERRORMSG="\nusage: ./build-gcc.sh argument\navailable argument:\n  opt, enable cat_optimize\n  lto, enable LTO GCC\n  pgo, enable Profile Guided Optimization\n  gcov, enable gcov profiling\n  stable, latest Release GCC\n  stable-TAG, spesific Release GCC tag\n  beta, latest Bleeding Edge GCC\n  beta-TAG, spesific Bleeding Edge GCC tag\n\nvalid GCC tag:\n  https://github.com/Diaz1401/gcc-stable/releases\n  https://github.com/Diaz1401/gcc/releases\n"
 if [ -z "$ARG" ]; then
   echo -e $ERRORMSG
   exit 1
 else
   for i in ${ARG}; do
     case "${i}" in
+      opt) CAT=true;;
       lto) LTO=true;;
       pgo) PGO=true;;
       gcov) GCOV=true;;
@@ -30,7 +31,7 @@ else
   if [ "${STABLE}" == "true" ] || [ "${BETA}" == "true" ]; then
     USE_LATEST=true; fi
 fi
-export LTO PGO GCOV STABLE BETA USE_LATEST
+export CAT LTO PGO GCOV STABLE BETA USE_LATEST
 
 # Silence all safe.directory warnings
 git config --global --add safe.directory '*'
@@ -161,6 +162,8 @@ build_kernel(){
     miui_patch
   fi
   BUILD_START=$(date +"%s")
+  if [ "$CAT" == "true" ]; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE; fi
   if [ "$LTO" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC; fi
   if [ "$GCOV" == "true" ]; then
@@ -199,6 +202,8 @@ build_end(){
   DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE_NAME}-${COMMIT_SHA}.img
   DTB_NAME=${KERNEL_NAME}-DTB-${DATE_NAME}-${COMMIT_SHA}
   ZIP_NAME=${KERNEL_NAME}-${DATE_NAME}-${COMMIT_SHA}.zip
+  if [ "${CAT}" == "true" ]; then
+    ZIP_NAME=OPT-${ZIP_NAME}; fi
   if [ "${LTO}" == "true" ]; then
     ZIP_NAME=LTO-${ZIP_NAME}; fi
   if [ "${PGO}" == "true" ]; then
