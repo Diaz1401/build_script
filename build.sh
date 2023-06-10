@@ -69,7 +69,7 @@ git config --global --add safe.directory '*'
 
 KERNEL_NAME=Kucing
 KERNEL_DIR=$(pwd)
-{NPROC}=$(nproc --all)
+NPROC=$(nproc --all)
 AK3=${KERNEL_DIR}/AnyKernel3
 TOOLCHAIN=${KERNEL_DIR}/toolchain
 LOG=${KERNEL_DIR}/log.txt
@@ -94,7 +94,7 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 
-export {NPROC} KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
+export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
 
 #
 # Clone Toolchain
@@ -210,15 +210,20 @@ build_kernel(){
     miui_patch
   fi
   BUILD_START=$(date +"%s")
+  if [ "$LTO" == "true" ]; then
+    if [ "$GCC" == "true" ]; then
+      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC
+    else
+      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_CLANG
+    fi
+  fi
   if [ "$CAT" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE; fi
-  if [ "$LTO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC; fi
   if [ "$GCOV" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
   if [ "$PGO" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO; fi
-  if [ "$PGO" == "true" ]; then
+  if [ "$DCE" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
   if [ "$GCC" == "true" ]; then
     make -j${NPROC} O=out cat_defconfig CROSS_COMPILE=aarch64-elf- |& tee -a $LOG
@@ -266,6 +271,8 @@ build_end(){
     ZIP_NAME=LTO-${ZIP_NAME}; fi
   if [ "$PGO" == "true" ]; then
     ZIP_NAME=PGO-${ZIP_NAME}; fi
+  if [ "$DCE" == "true" ]; then
+    ZIP_NAME=DCE-${ZIP_NAME}; fi
   if [ "$GCOV" == "true" ]; then
     ZIP_NAME=GCOV-${ZIP_NAME}; fi
   if [ "$1" == "miui" ]; then
