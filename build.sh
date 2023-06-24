@@ -100,39 +100,39 @@ export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERN
 # Clone Toolchain
 clone_tc(){
   if [ -a "$TOOLCHAIN" ]; then
-    echo -e "${YELLOW}===> ${BLUE}Toolchain exist${WHITE}"
-  else
-    echo -e "${YELLOW}===> ${BLUE}Downloading Toolchain${WHITE}"
-    mkdir -p "$TOOLCHAIN"
-    if [ "$GCC" == "true" ]; then
-      if [ "$USE_LATEST" == "true" ]; then
-        if [ ! -z "$STABLE" ]; then
-          curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
-        else
-          curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
-        fi
+    echo -e "${YELLOW}===> ${BLUE}Removing old toolchain${WHITE}"
+    rm -rf $TOOLCHAIN
+  fi
+  echo -e "${YELLOW}===> ${BLUE}Downloading Toolchain${WHITE}"
+  mkdir -p "$TOOLCHAIN"
+  if [ "$GCC" == "true" ]; then
+    if [ "$USE_LATEST" == "true" ]; then
+      if [ ! -z "$STABLE" ]; then
+        curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
       else
-        if [ ! -z "$STABLE" ]; then
-          wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${STABLE}/gcc.tar.zst
-        else
-          wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc/releases/download/${BETA}/gcc.tar.zst
-        fi
+        curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
       fi
-      tar xf gcc.tar.zst -C $TOOLCHAIN
     else
-      if [ "$USE_LATEST" == "true" ]; then
-        curl -s https://api.github.com/repos/Diaz1401/clang/releases/latest |
-          grep "browser_download_url" |
-          cut -d '"' -f4 |
-          wget -qO clang.tar.zst -i -
-      elif [ ! -z "$BETA" ]; then
-        wget -qO clang.tar.zst https://github.com/Diaz1401/clang/releases/download/${BETA}/clang.tar.zst
+      if [ ! -z "$STABLE" ]; then
+        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${STABLE}/gcc.tar.zst
       else
-        echo "specify beta-TAG when using clang, stable-TAG not supported"
-        exit 1
+        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc/releases/download/${BETA}/gcc.tar.zst
       fi
-      tar xf clang.tar.zst -C $TOOLCHAIN
     fi
+    tar xf gcc.tar.zst -C $TOOLCHAIN
+  else
+    if [ "$USE_LATEST" == "true" ]; then
+      curl -s https://api.github.com/repos/Diaz1401/clang/releases/latest |
+        grep "browser_download_url" |
+        cut -d '"' -f4 |
+        wget -qO clang.tar.zst -i -
+    elif [ ! -z "$BETA" ]; then
+      wget -qO clang.tar.zst https://github.com/Diaz1401/clang/releases/download/${BETA}/clang.tar.zst
+    else
+      echo "specify beta-TAG when using clang, stable-TAG not supported"
+      exit 1
+    fi
+    tar xf clang.tar.zst -C $TOOLCHAIN
   fi
 }
 
