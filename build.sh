@@ -74,6 +74,7 @@ AK3=${KERNEL_DIR}/AnyKernel3
 TOOLCHAIN=${KERNEL_DIR}/toolchain
 LOG=${KERNEL_DIR}/log.txt
 KERNEL_DTB=${KERNEL_DIR}/out/arch/arm64/boot/dtb
+KERNEL_DTB_IMG=${KERNEL_DIR}/out/arch/arm64/boot/dtb.img
 KERNEL_IMG=${KERNEL_DIR}/out/arch/arm64/boot/Image
 KERNEL_IMG_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image-dtb
 KERNEL_IMG_GZ_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb
@@ -96,7 +97,7 @@ BLUE='\033[1;34m'
 
 export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
 
-echo -e "${YELLOW}Revision ===> ${BLUE}Sat Jun 24 10:16:49 AM WIB 2023${WHITE}"
+echo -e "${YELLOW}Revision ===> ${BLUE}Sat Jun 24 10:58:43 PM WIB 2023${WHITE}"
 #
 # Clone Toolchain
 clone_tc(){
@@ -148,30 +149,20 @@ clone_ak(){
     cd -
   else
     echo -e "${YELLOW}===> ${BLUE}Cloning AnyKernel3${WHITE}"
-    git clone -q --depth=1 -b alioth https://github.com/Diaz1401/AnyKernel3.git $AK3
+    git clone -q --depth=1 -b sweet https://github.com/KuroSeinenbutV2/AnyKernel3.git $AK3
   fi
 }
 
 #
 # send_info - sends text to telegram
 send_info(){
-  if [ "$1" == "miui" ]; then
-    CAPTION=$(echo -e \
-    "MIUI Build started
+  CAPTION=$(echo -e \
+  "Build started
 Date: <code>${BUILD_DATE}</code>
 HEAD: <code>${COMMIT_SHA}</code>
 Commit: <code>${COMMIT}</code>
 Branch: <code>${KERNEL_BRANCH}</code>
 ")
-  else
-    CAPTION=$(echo -e \
-    "Build started
-Date: <code>${BUILD_DATE}</code>
-HEAD: <code>${COMMIT_SHA}</code>
-Commit: <code>${COMMIT}</code>
-Branch: <code>${KERNEL_BRANCH}</code>
-")
-  fi
   curl -s "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
     -F parse_mode=html \
     -F text="$CAPTION" \
@@ -196,12 +187,6 @@ send_file_nocap(){
 }
 
 #
-# miui_patch - apply custom patch before build
-miui_patch(){
-  git apply patch/miui-panel-dimension.patch
-}
-
-#
 # build_kernel
 build_kernel(){
   cd $KERNEL_DIR
@@ -209,30 +194,27 @@ build_kernel(){
     rm -rf out
     mkdir -p out
   fi
-  if [ "$1" == "miui" ]; then
-    miui_patch
-  fi
   BUILD_START=$(date +"%s")
   if [ "$LTO" == "true" ]; then
     if [ "$GCC" == "true" ]; then
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC
+      ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e LTO_GCC
     else
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_CLANG
+      ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e LTO_CLANG
     fi
   fi
   if [ "$CAT" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE; fi
+    ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e CAT_OPTIMIZE; fi
   if [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
+    ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
   if [ "$PGO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO; fi
+    ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e PGO; fi
   if [ "$DCE" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
+    ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
   if [ "$GCC" == "true" ]; then
-    make -j${NPROC} O=out cat_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out sweet_user_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
     make -j${NPROC} O=out CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   else
-    make -j${NPROC} O=out cat_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out sweet_user_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
     make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   fi
   BUILD_END=$(date +"%s")
@@ -242,7 +224,7 @@ build_kernel(){
 #
 # build_end - creates and sends zip
 build_end(){
-  rm -rf ${AK3}/Kucing* ${AK3}/MIUI-Kucing* ${AK3}/dtb* ${AK3}/Image*
+  rm -rf ${AK3}/Kucing* ${AK3}/dtb* ${AK3}/Image*
   if [ -a "$KERNEL_IMG_GZ_DTB" ]; then
     mv $KERNEL_IMG_GZ_DTB $AK3
   elif [ -a "$KERNEL_IMG_DTB" ]; then
@@ -260,9 +242,10 @@ build_end(){
   ls ${KERNEL_DIR}/out/arch/arm64/boot/
   cp $KERNEL_DTBO $AK3
   cp $KERNEL_DTB $AK3
+  cp $KERNEL_DTB_IMG $AK3
   cd $AK3
-  DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE}-${COMMIT_SHA}.img
-  DTB_NAME=${KERNEL_NAME}-DTB-${DATE}-${COMMIT_SHA}
+#  DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE}-${COMMIT_SHA}.img
+#  DTB_NAME=${KERNEL_NAME}-DTB-${DATE}-${COMMIT_SHA}
   ZIP_NAME=${KERNEL_NAME}-${DATE}-${COMMIT_SHA}.zip
   if [ "$CLANG" == "true" ]; then
     ZIP_NAME=CLANG-${ZIP_NAME}; fi
@@ -278,21 +261,19 @@ build_end(){
     ZIP_NAME=DCE-${ZIP_NAME}; fi
   if [ "$GCOV" == "true" ]; then
     ZIP_NAME=GCOV-${ZIP_NAME}; fi
-  if [ "$1" == "miui" ]; then
-    ZIP_NAME=MIUI-${ZIP_NAME}; fi
   zip -r9 $ZIP_NAME * -x .git .github LICENSE README.md
   mv $KERNEL_DTBO ${AK3}/${DTBO_NAME}
   mv $KERNEL_DTB ${AK3}/${DTB_NAME}
   echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
   send_file $ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
   echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
-  send_file ${KERNEL_DIR}/out/.config "$ZIP_NAME defconfig"
+  send_file ${KERNEL_DIR}/out/.config "<code>$ZIP_NAME defconfig</code>"
 #  echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
 #  send_file ${DTBO_NAME}
 #  echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
 #  send_file ${DTB_NAME}
 #  echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
-  send_file $LOG "$ZIP_NAME log"
+  send_file $LOG "<code>$ZIP_NAME log</code>"
 }
 
 COMMIT=$(git log --pretty=format:"%s" -1)
@@ -310,10 +291,9 @@ Branch: <code>$KERNEL_BRANCH</code>
 #
 # build_all - run build script
 build_all(){
-  FLAG=$1
-  send_info $FLAG
-  build_kernel $FLAG
-  build_end $FLAG
+  send_info
+  build_kernel
+  build_end
 }
 
 #
@@ -321,4 +301,3 @@ build_all(){
 clone_tc
 clone_ak
 build_all
-#build_all miui
