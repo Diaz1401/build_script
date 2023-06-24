@@ -96,6 +96,7 @@ BLUE='\033[1;34m'
 
 export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
 
+echo -e "${YELLOW}Revision ===> ${BLUE}Sat Jun 24 10:16:49 AM WIB 2023${WHITE}"
 #
 # Clone Toolchain
 clone_tc(){
@@ -204,8 +205,10 @@ miui_patch(){
 # build_kernel
 build_kernel(){
   cd $KERNEL_DIR
-#  rm -rf out
-#  mkdir -p out
+  if [ "$PGO" != "true" ]; then
+    rm -rf out
+    mkdir -p out
+  fi
   if [ "$1" == "miui" ]; then
     miui_patch
   fi
