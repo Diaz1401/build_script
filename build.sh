@@ -205,7 +205,7 @@ build_kernel(){
   if [ "$CAT" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e CAT_OPTIMIZE; fi
   if [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
+    ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e PGO_KERNEL; fi
   if [ "$PGO" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/sweet_user_defconfig -e PGO; fi
   if [ "$DCE" == "true" ]; then
