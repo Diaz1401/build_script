@@ -148,7 +148,7 @@ clone_ak(){
     cd -
   else
     echo -e "${YELLOW}===> ${BLUE}Cloning AnyKernel3${WHITE}"
-    git clone -q --depth=1 -b alioth https://github.com/Diaz1401/AnyKernel3.git $AK3
+    git clone -q --depth=1 -b whyred https://github.com/Diaz1401/AnyKernel3.git $AK3
   fi
 }
 
@@ -215,24 +215,24 @@ build_kernel(){
   BUILD_START=$(date +"%s")
   if [ "$LTO" == "true" ]; then
     if [ "$GCC" == "true" ]; then
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC
+      ./scripts/config --file arch/arm64/configs/whyred_defconfig -e LTO_GCC
     else
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_CLANG
+      ./scripts/config --file arch/arm64/configs/whyred_defconfig -e LTO_CLANG
     fi
   fi
   if [ "$CAT" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE; fi
+    ./scripts/config --file arch/arm64/configs/whyred_defconfig -e CAT_OPTIMIZE; fi
   if [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
+    ./scripts/config --file arch/arm64/configs/whyred_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
   if [ "$PGO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO; fi
+    ./scripts/config --file arch/arm64/configs/whyred_defconfig -e PGO; fi
   if [ "$DCE" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
+    ./scripts/config --file arch/arm64/configs/whyred_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
   if [ "$GCC" == "true" ]; then
-    make -j${NPROC} O=out cat_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out whyred_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
     make -j${NPROC} O=out CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   else
-    make -j${NPROC} O=out cat_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out whyred_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
     make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   fi
   BUILD_END=$(date +"%s")
