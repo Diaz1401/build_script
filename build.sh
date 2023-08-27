@@ -229,11 +229,11 @@ build_kernel(){
   if [ "$DCE" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/whyred_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
   if [ "$GCC" == "true" ]; then
-    make -j${NPROC} O=out whyred_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out ARCH=arm64 whyred_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   else
-    make -j${NPROC} O=out whyred_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out ARCH=arm64 whyred_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   fi
   BUILD_END=$(date +"%s")
   DIFF=$((BUILD_END - BUILD_START))
