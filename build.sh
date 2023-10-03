@@ -229,8 +229,29 @@ build_kernel(){
   if [ "$DCE" == "true" ]; then
     ./scripts/config --file arch/arm64/configs/whyred_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
   if [ "$GCC" == "true" ]; then
-    make -j${NPROC} O=out ARCH=arm64 whyred_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} \
+      O=out \
+      ARCH=arm64 \
+      CC=clang \
+      LD=ld.lld \
+      AR=llvm-ar \
+      NM=llvm-nm \
+      STRIP=llvm-strip \
+      OBJCOPY=llvm-objcopy \
+      OBJDUMP=llvm-objdump \
+      CROSS_COMPILE=aarch64-linux-gnu- \
+      whyred_defconfig |& tee -a $LOG
+    make -j${NPROC} \
+      O=out \
+      ARCH=arm64 \
+      CC=clang \
+      LD=ld.lld \
+      AR=llvm-ar \
+      NM=llvm-nm \
+      STRIP=llvm-strip \
+      OBJCOPY=llvm-objcopy \
+      OBJDUMP=llvm-objdump \
+      CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   else
     make -j${NPROC} O=out ARCH=arm64 whyred_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
     make -j${NPROC} O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
