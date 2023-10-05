@@ -70,14 +70,9 @@ git config --global --add safe.directory '*'
 KERNEL_NAME=Kucing
 KERNEL_DIR=$(pwd)
 NPROC=$(nproc --all)
-AK3=${KERNEL_DIR}/AnyKernel3
 TOOLCHAIN=${KERNEL_DIR}/toolchain
 LOG=${KERNEL_DIR}/log.txt
-KERNEL_DTB=${KERNEL_DIR}/out/arch/arm64/boot/dtb
-KERNEL_IMG=${KERNEL_DIR}/out/arch/arm64/boot/Image
-KERNEL_IMG_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image-dtb
-KERNEL_IMG_GZ_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb
-KERNEL_DTBO=${KERNEL_DIR}/out/arch/arm64/boot/dtbo.img
+KERNEL_IMG=${KERNEL_DIR}/out/arch/x68/boot/Image
 TELEGRAM_CHAT=-1001180467256
 #unused TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
 DATE=$(date +"%Y%m%d")
@@ -94,9 +89,9 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 
-export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
+export NPROC KERNEL_NAME KERNEL_DIR TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
 
-echo -e "${YELLOW}Revision ===> ${BLUE}Sat Jun 24 10:16:49 AM WIB 2023${WHITE}"
+echo -e "${YELLOW}Revision ===> ${BLUE}Thu Oct  5 11:20:50 PM WIB 2023${WHITE}"
 #
 # Clone Toolchain
 clone_tc(){
@@ -138,40 +133,15 @@ clone_tc(){
 }
 
 #
-# Clones anykernel
-clone_ak(){
-  if [ -a "$AK3" ]; then
-    echo -e "${YELLOW}===> ${BLUE}AnyKernel3 exist${WHITE}"
-    echo -e "${YELLOW}===> ${BLUE}Try to update repo${WHITE}"
-    cd $AK3
-    git pull
-    cd -
-  else
-    echo -e "${YELLOW}===> ${BLUE}Cloning AnyKernel3${WHITE}"
-    git clone -q --depth=1 -b alioth https://github.com/Diaz1401/AnyKernel3.git $AK3
-  fi
-}
-
-#
 # send_info - sends text to telegram
 send_info(){
-  if [ "$1" == "miui" ]; then
-    CAPTION=$(echo -e \
-    "MIUI Build started
+  CAPTION=$(echo -e \
+  "Build started
 Date: <code>${BUILD_DATE}</code>
 HEAD: <code>${COMMIT_SHA}</code>
 Commit: <code>${COMMIT}</code>
 Branch: <code>${KERNEL_BRANCH}</code>
 ")
-  else
-    CAPTION=$(echo -e \
-    "Build started
-Date: <code>${BUILD_DATE}</code>
-HEAD: <code>${COMMIT_SHA}</code>
-Commit: <code>${COMMIT}</code>
-Branch: <code>${KERNEL_BRANCH}</code>
-")
-  fi
   curl -s "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
     -F parse_mode=html \
     -F text="$CAPTION" \
@@ -196,12 +166,6 @@ send_file_nocap(){
 }
 
 #
-# miui_patch - apply custom patch before build
-miui_patch(){
-  git apply patch/miui-panel-dimension.patch
-}
-
-#
 # build_kernel
 build_kernel(){
   cd $KERNEL_DIR
@@ -209,31 +173,28 @@ build_kernel(){
     rm -rf out
     mkdir -p out
   fi
-  if [ "$1" == "miui" ]; then
-    miui_patch
-  fi
   BUILD_START=$(date +"%s")
   if [ "$LTO" == "true" ]; then
     if [ "$GCC" == "true" ]; then
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC
+      ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e LTO_GCC
     else
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_CLANG
+      ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e LTO_CLANG
     fi
   fi
   if [ "$CAT" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE; fi
+    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e CAT_OPTIMIZE; fi
   if [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
+    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
   if [ "$PGO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO; fi
+    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e PGO; fi
   if [ "$DCE" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
+    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
   if [ "$GCC" == "true" ]; then
-    make -j${NPROC} O=out cat_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out android-x86_64_defconfig CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
   else
-    make -j${NPROC} O=out cat_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out android-x86_64_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
   fi
   BUILD_END=$(date +"%s")
   DIFF=$((BUILD_END - BUILD_START))
@@ -242,28 +203,18 @@ build_kernel(){
 #
 # build_end - creates and sends zip
 build_end(){
-  rm -rf ${AK3}/Kucing* ${AK3}/MIUI-Kucing* ${AK3}/dtb* ${AK3}/Image*
-  if [ -a "$KERNEL_IMG_GZ_DTB" ]; then
-    mv $KERNEL_IMG_GZ_DTB $AK3
-  elif [ -a "$KERNEL_IMG_DTB" ]; then
-    mv $KERNEL_IMG_DTB $AK3
-  elif [ -a "$KERNEL_IMG" ]; then
-    mv $KERNEL_IMG $AK3
+  rm -rf ${KERNEL_DIR}/Image
+  if [ -a "$KERNEL_IMG" ]; then
+    mv $KERNEL_IMG $KERNEL_DIR
   else
     echo -e "${YELLOW}===> ${RED}Build failed, sad${WHITE}"
     echo -e "${YELLOW}===> ${GREEN}Send build log to Telegram${WHITE}"
     send_file $LOG "$ZIP_NAME log"
     exit 1
   fi
-  echo -e "${YELLOW}===> ${GREEN}Build success, generating flashable zip...${WHITE}"
-  find ${KERNEL_DIR}/out/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + > $KERNEL_DTB
-  ls ${KERNEL_DIR}/out/arch/arm64/boot/
-  cp $KERNEL_DTBO $AK3
-  cp $KERNEL_DTB $AK3
-  cd $AK3
-  DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE}-${COMMIT_SHA}.img
-  DTB_NAME=${KERNEL_NAME}-DTB-${DATE}-${COMMIT_SHA}
-  ZIP_NAME=${KERNEL_NAME}-${DATE}-${COMMIT_SHA}.zip
+  echo -e "${YELLOW}===> ${GREEN}Build success...${WHITE}"
+  cd $KERNEL_DIR
+  ZIP_NAME=${KERNEL_NAME}-${DATE}-${COMMIT_SHA}
   if [ "$CLANG" == "true" ]; then
     ZIP_NAME=CLANG-${ZIP_NAME}; fi
   if [ "$GCC" == "true" ]; then
@@ -278,20 +229,11 @@ build_end(){
     ZIP_NAME=DCE-${ZIP_NAME}; fi
   if [ "$GCOV" == "true" ]; then
     ZIP_NAME=GCOV-${ZIP_NAME}; fi
-  if [ "$1" == "miui" ]; then
-    ZIP_NAME=MIUI-${ZIP_NAME}; fi
-  zip -r9 $ZIP_NAME * -x .git .github LICENSE README.md
-  mv $KERNEL_DTBO ${AK3}/${DTBO_NAME}
-  mv $KERNEL_DTB ${AK3}/${DTB_NAME}
+  mv ${KERNEL_DIR}/Image ${ZIP_NAME}
   echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
   send_file $ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
-  echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
+  echo -e "${YELLOW}===> ${WHITE}Name: ${GREEN}${ZIP_NAME}"
   send_file ${KERNEL_DIR}/out/.config "$ZIP_NAME defconfig"
-#  echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
-#  send_file ${DTBO_NAME}
-#  echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
-#  send_file ${DTB_NAME}
-#  echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
   send_file $LOG "$ZIP_NAME log"
 }
 
@@ -319,6 +261,4 @@ build_all(){
 #
 # compile time
 clone_tc
-clone_ak
 build_all
-#build_all miui
