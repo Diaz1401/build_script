@@ -21,8 +21,8 @@ Available argument:\n\
 valid stable toolchain tag:\n\
   https://github.com/Diaz1401/gcc-stable/releases\n\n\
 valid experimental toolchain tag:\n\
-  https://github.com/Diaz1401/clang/releases\n\
-  https://github.com/Diaz1401/gcc/releases"
+  https://github.com/Mengkernel/clang/releases\n\
+  https://github.com/Mengkernel/gcc/releases"
 
 if [ -z "$ARG" ]; then
   echo -e "$ERRORMSG"
@@ -106,24 +106,24 @@ clone_tc(){
       if [ ! -z "$STABLE" ]; then
         curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
       else
-        curl -s https://api.github.com/repos/Diaz1401/gcc/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
+        curl -s https://api.github.com/repos/Mengkernel/gcc/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
       fi
     else
       if [ ! -z "$STABLE" ]; then
         wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${STABLE}/gcc.tar.zst
       else
-        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc/releases/download/${BETA}/gcc.tar.zst
+        wget -qO gcc.tar.zst https://github.com/Mengkernel/gcc/releases/download/${BETA}/gcc.tar.zst
       fi
     fi
     tar xf gcc.tar.zst -C $TOOLCHAIN
   else
     if [ "$USE_LATEST" == "true" ]; then
-      curl -s https://api.github.com/repos/Diaz1401/clang/releases/latest |
+      curl -s https://api.github.com/repos/Mengkernel/clang/releases/latest |
         grep "browser_download_url" |
         cut -d '"' -f4 |
         wget -qO clang.tar.zst -i -
     elif [ ! -z "$BETA" ]; then
-      wget -qO clang.tar.zst https://github.com/Diaz1401/clang/releases/download/${BETA}/clang.tar.zst
+      wget -qO clang.tar.zst https://github.com/Mengkernel/clang/releases/download/${BETA}/clang.tar.zst
     else
       echo "specify beta-TAG when using clang, stable-TAG not supported"
       exit 1
