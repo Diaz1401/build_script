@@ -72,7 +72,7 @@ KERNEL_DIR=$(pwd)
 NPROC=$(nproc --all)
 TOOLCHAIN=${KERNEL_DIR}/toolchain
 LOG=${KERNEL_DIR}/log.txt
-KERNEL_IMG=${KERNEL_DIR}/out/arch/x68/boot/Image
+KERNEL_IMG=${KERNEL_DIR}/out/arch/x68/boot/bzImage
 TELEGRAM_CHAT=-1001180467256
 #unused TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
 DATE=$(date +"%Y%m%d")
@@ -203,7 +203,7 @@ build_kernel(){
 #
 # build_end - creates and sends zip
 build_end(){
-  rm -rf ${KERNEL_DIR}/Image
+  rm -rf ${KERNEL_DIR}/bzImage
   if [ -a "$KERNEL_IMG" ]; then
     mv $KERNEL_IMG $KERNEL_DIR
   else
@@ -229,7 +229,7 @@ build_end(){
     ZIP_NAME=DCE-${ZIP_NAME}; fi
   if [ "$GCOV" == "true" ]; then
     ZIP_NAME=GCOV-${ZIP_NAME}; fi
-  mv ${KERNEL_DIR}/Image ${ZIP_NAME}
+  mv ${KERNEL_DIR}/bzImage ${ZIP_NAME}
   echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
   send_file $ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
   echo -e "${YELLOW}===> ${WHITE}Name: ${GREEN}${ZIP_NAME}"
