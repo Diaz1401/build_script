@@ -72,7 +72,7 @@ KERNEL_DIR=$(pwd)
 NPROC=$(nproc --all)
 TOOLCHAIN=${KERNEL_DIR}/toolchain
 LOG=${KERNEL_DIR}/log.txt
-KERNEL_IMG=${KERNEL_DIR}/out/arch/x68/boot/bzImage
+KERNEL_IMG=${KERNEL_DIR}/out/arch/x86/boot/bzImage
 TELEGRAM_CHAT=-1001180467256
 #unused TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
 DATE=$(date +"%Y%m%d")
@@ -89,7 +89,7 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 
-export NPROC KERNEL_NAME KERNEL_DIR TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
+export NPROC KERNEL_NAME KERNEL_DIR TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
 
 echo -e "${YELLOW}Revision ===> ${BLUE}Thu Oct  5 11:20:50 PM WIB 2023${WHITE}"
 #
@@ -176,25 +176,25 @@ build_kernel(){
   BUILD_START=$(date +"%s")
   if [ "$LTO" == "true" ]; then
     if [ "$GCC" == "true" ]; then
-      ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e LTO_GCC
+      ./scripts/config --file arch/x86/configs/android-x86_64_defconfig -e LTO_GCC
     else
-      ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e LTO_CLANG
+      ./scripts/config --file arch/x86/configs/android-x86_64_defconfig -e LTO_CLANG
     fi
   fi
   if [ "$CAT" == "true" ]; then
-    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e CAT_OPTIMIZE; fi
+    ./scripts/config --file arch/x86/configs/android-x86_64_defconfig -e CAT_OPTIMIZE; fi
   if [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
+    ./scripts/config --file arch/x86/configs/android-x86_64_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
   if [ "$PGO" == "true" ]; then
-    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e PGO; fi
+    ./scripts/config --file arch/x86/configs/android-x86_64_defconfig -e PGO; fi
   if [ "$DCE" == "true" ]; then
-    ./scripts/config --file arch/x68/configs/android-x86_64_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
+    ./scripts/config --file arch/x86/configs/android-x86_64_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
   if [ "$GCC" == "true" ]; then
     make -j${NPROC} O=out android-x86_64_defconfig CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
     make -j${NPROC} O=out CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
   else
-    make -j${NPROC} O=out android-x86_64_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 CROSS_COMPILE=x86_64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=out android-x86_64_defconfig LLVM=1 LLVM_IAS=1 |& tee -a $LOG
+    make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 |& tee -a $LOG
   fi
   BUILD_END=$(date +"%s")
   DIFF=$((BUILD_END - BUILD_START))
