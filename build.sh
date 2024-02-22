@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Copyright (c) 2021 CloudedQuartz
-# Copyright (c) 2021-2023 Diaz1401
+# Copyright (c) 2021-2024 Diaz1401
 
 ARG=$@
 ERRORMSG="\
@@ -11,7 +11,7 @@ Available argument:\n\
   gcc             use GCC\n\
   opt             enable cat_optimize\n\
   lto             enable LTO\n\
-  pgo             enable PGO\n\
+  pgo             enable PGO\n\~
   dce             enable dead code and data elimination\n\
   gcov            enable gcov profiling\n\
   beta            download experimental toolchain\n\
@@ -96,7 +96,14 @@ BLUE='\033[1;34m'
 
 export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
 
-echo -e "${YELLOW}Revision ===> ${BLUE}Sat Jun 24 10:16:49 AM WIB 2023${WHITE}"
+echo "LC_ALL=en_US.UTF-8" | sudo tee -a /etc/environment
+echo "en_US.UTF-8 UTF-8" | sudo tee -a /etc/locale.gen
+echo "LANG=en_US.UTF-8" | sudo tee -a /etc/locale.conf
+sudo locale-gen en_US.UTF-8
+sudo dkpg-reconfigure locales
+
+echo -e "${YELLOW}Revision ===> ${BLUE}Thu Feb 22 03:38:08 PM WIB 2024${WHITE}"
+
 #
 # Clone Toolchain
 clone_tc(){
