@@ -15,11 +15,12 @@ Available argument:\n\
   dce             enable dead code and data elimination\n\
   gcov            enable gcov profiling\n\
   beta            download experimental toolchain\n\
-  stable          download stable toolchain (only GCC for now)\n\
+  stable          download stable toolchain\n\
   beta-TAG        spesific experimental toolchain tag\n\
   stable-TAG      spesific stable toolchain tag\n\n\
 valid stable toolchain tag:\n\
-  https://github.com/Diaz1401/gcc-stable/releases\n\n\
+  https://github.com/Diaz1401/clang-stable/releases\n\
+  https://github.com/Diaz1401/gcc-stable/releases\n\
 valid experimental toolchain tag:\n\
   https://github.com/Mengkernel/clang/releases\n\
   https://github.com/Mengkernel/gcc/releases"
@@ -130,15 +131,23 @@ clone_tc(){
     tar xf gcc.tar.zst -C $TOOLCHAIN
   else
     if [ "$USE_LATEST" == "true" ]; then
-      curl -s https://api.github.com/repos/Mengkernel/clang/releases/latest |
+      if [ ! -z "$STABLE" ]; then
+        curl -s https://api.github.com/repos/Diaz1401/clang-stable/releases/latest |
         grep "browser_download_url" |
         cut -d '"' -f4 |
         wget -qO clang.tar.zst -i -
-    elif [ ! -z "$BETA" ]; then
-      wget -qO clang.tar.zst https://github.com/Mengkernel/clang/releases/download/${BETA}/clang.tar.zst
+      else
+        curl -s https://api.github.com/repos/Mengkernel/clang/releases/latest |
+          grep "browser_download_url" |
+          cut -d '"' -f4 |
+          wget -qO clang.tar.zst -i -
+      fi
     else
-      echo "specify beta-TAG when using clang, stable-TAG not supported"
-      exit 1
+      if [ ! -z "$STABLE" ]; then
+        wget -qO clang.tar.zst https://github.com/Diaz1401/clang-stable/releases/download/${STABLE}/clang.tar.zst
+      else
+        wget -qO clang.tar.zst https://github.com/Mengkernel/clang/releases/download/${BETA}/clang.tar.zst
+      fi
     fi
     tar xf clang.tar.zst -C $TOOLCHAIN
   fi
