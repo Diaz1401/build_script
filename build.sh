@@ -7,7 +7,8 @@ ARG=$@
 ERRORMSG="\
 Usage: ./build-gcc.sh argument\n\
 Available argument:\n\
-  clang           use LLVM Clang\n\
+  clang           use Clang/LLVM\n\
+  aosp            use Android Clang/LLVM (use with 'clang' option)\n\
   gcc             use GCC\n\
   opt             enable cat_optimize\n\
   lto             enable LTO\n\
@@ -32,6 +33,7 @@ else
   for i in $ARG; do
     case "$i" in
       clang) CLANG=true;;
+      aosp) AOSP=true;;
       gcc) GCC=true;;
       opt) CAT=true;;
       lto) LTO=true;;
@@ -45,21 +47,19 @@ else
       *) echo -e "$ERRORMSG"; exit 1;;
     esac
   done
-  if [ -z "$GCC" ] && [ -z "$CLANG" ]; then
-    echo "toolchain not specified"
-    exit 1; fi
-  if [ ! -z "$GCC" ] && [ ! -z "$CLANG" ]; then
-    echo "do not use both gcc and clang"
-    exit 1; fi
-  if [ ! -z "$PGO" ] && [ ! -z "$GCOV" ]; then
-    echo "do not use both gcov and pgo"
-    exit 1; fi
-  if [ -z "$STABLE" ] && [ -z "$BETA" ]; then
-    echo "specify stable or beta"
-    exit 1; fi
-  if [ ! -z "$STABLE" ] && [ ! -z "$BETA" ]; then
-    echo "do not use both stable and beta"
-    exit 1; fi
+  if [[ -z "$GCC" && -z "$CLANG" ]]; then
+    echo "Toolchain not specified"; exit 1
+  elif [[ -n "$GCC" && -n "$CLANG" ]]; then
+    echo "Do not use both GCC and Clang"; exit 1
+  elif [[ -n "$PGO" && -n "$GCOV" ]]; then
+    echo "Do not use both gcov and PGO"; exit 1
+  elif [[ -z "$STABLE" && -z "$BETA" ]]; then
+    echo "Specify stable or beta"; exit 1
+  elif [[ -n "$STABLE" && -n "$BETA" ]]; then
+    echo "Do not use both stable and beta"; exit 1
+  elif [[ -n "$CLANG" && -z "$AOSP" ]]; then
+    echo "Do not use 'aosp' without 'clang'"; exit 1
+  fi
   if [ "$STABLE" == "true" ] || [ "$BETA" == "true" ]; then
     USE_LATEST=true
   fi
@@ -88,6 +88,7 @@ KERNEL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 BUILD_DATE=$(date)
 KBUILD_BUILD_USER=Diaz
 PATH=${TOOLCHAIN}/bin:${PATH}
+AOSP_CLANG_VERSION="clang-r510928"
 # Colors
 WHITE='\033[0m'
 RED='\033[1;31m'
@@ -129,6 +130,9 @@ clone_tc(){
       fi
     fi
     tar xf gcc.tar.zst -C $TOOLCHAIN
+  elif [ "$AOSP" == "true" ]; then
+    wget -qO clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/${AOSP_CLANG_VERSION}.tar.gz
+    tar xf clang.tar.gz -C $TOOLCHAIN
   else
     if [ "$USE_LATEST" == "true" ]; then
       if [ ! -z "$STABLE" ]; then
