@@ -3,6 +3,9 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
+REV="Tue 28 May 2024 08:20:19 AM WIB"
+echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
+
 ARG=$@
 ERRORMSG="\
 Usage: ./build-gcc.sh argument\n\
@@ -103,8 +106,6 @@ echo "en_US.UTF-8 UTF-8" | sudo tee -a /etc/locale.gen
 echo "LANG=en_US.UTF-8" | sudo tee -a /etc/locale.conf
 sudo locale-gen en_US.UTF-8
 sudo dkpg-reconfigure locales
-
-echo -e "${YELLOW}Revision ===> ${BLUE}Thu Feb 22 03:38:08 PM WIB 2024${WHITE}"
 
 #
 # Clone Toolchain
