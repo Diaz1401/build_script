@@ -3,7 +3,7 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Tue 28 May 2024 08:20:19 AM WIB"
+REV="Thu 30 May 2024 09:28:04 AM WIB"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
@@ -60,7 +60,7 @@ else
     echo "Specify stable or beta"; exit 1
   elif [[ -n "$STABLE" && -n "$BETA" ]]; then
     echo "Do not use both stable and beta"; exit 1
-  elif [[ -n "$CLANG" && -z "$AOSP" ]]; then
+  elif [[ -z "$CLANG" && -n "$AOSP" ]]; then
     echo "Do not use 'aosp' without 'clang'"; exit 1
   fi
   if [ "$STABLE" == "true" ] || [ "$BETA" == "true" ]; then
