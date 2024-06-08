@@ -263,7 +263,7 @@ build_kernel(){
 #
 # build_end - creates and sends zip
 build_end(){
-  rm -rf ${AK3}/Kucing* ${AK3}/MIUI-Kucing* ${AK3}/dtb* ${AK3}/Image*
+  rm -rf ${AK3}/*.zip ${AK3}/dtb* ${AK3}/Image*
   if [ -a "$KERNEL_IMG_GZ_DTB" ]; then
     mv $KERNEL_IMG_GZ_DTB $AK3
   elif [ -a "$KERNEL_IMG_DTB" ]; then
