@@ -3,7 +3,7 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Thu 30 May 2024 09:28:04 AM WIB"
+REV="Sun Jun  9 09:57:29 AM WIB 2024"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
@@ -236,9 +236,9 @@ build_kernel(){
   BUILD_START=$(date +"%s")
   if [ "$LTO" == "true" ]; then
     if [ "$GCC" == "true" ]; then
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_GCC
+      ./scripts/config --file arch/arm64/configs/cat_defconfig -d LTO_CLANG -e LTO_GCC
     else
-      ./scripts/config --file arch/arm64/configs/cat_defconfig -e LTO_CLANG
+      ./scripts/config --file arch/arm64/configs/cat_defconfig -d LTO_GCC -e LTO_CLANG
     fi
   fi
   if [ "$CAT" == "true" ]; then
