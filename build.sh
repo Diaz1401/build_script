@@ -3,7 +3,7 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Sun Jun  9 09:57:29 AM WIB 2024"
+REV="Tue Jun 11 08:10:29 AM WIB 2024"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
@@ -29,42 +29,65 @@ valid experimental toolchain tag:\n\
   https://github.com/Mengkernel/clang/releases\n\
   https://github.com/Mengkernel/gcc/releases"
 
+CLANG=false
+AOSP=false
+GCC=false
+CAT=false
+LTO=false
+PGO=false
+DCE=false
+TAG=""
+GCOV=false
+BETA=false
+STABLE=false
+LATEST=false
+
 if [ -z "$ARG" ]; then
   echo -e "$ERRORMSG"
   exit 1
 else
   for i in $ARG; do
     case "$i" in
-      clang) CLANG=true;;
-      aosp) AOSP=true;;
-      gcc) GCC=true;;
-      opt) CAT=true;;
-      lto) LTO=true;;
-      pgo) PGO=true;;
-      dce) DCE=true;;
-      gcov) GCOV=true;;
-      beta) BETA=true;;
-      stable) STABLE=true;;
-      beta-*) BETA=$(echo "$i" | sed s/beta-//g);;
-      stable-*) STABLE=$(echo "$i" | sed s/stable-//g);;
-      *) echo -e "$ERRORMSG"; exit 1;;
+    clang) CLANG=true ;;
+    aosp) AOSP=true ;;
+    gcc) GCC=true ;;
+    opt) CAT=true ;;
+    lto) LTO=true ;;
+    pgo) PGO=true ;;
+    dce) DCE=true ;;
+    gcov) GCOV=true ;;
+    beta) BETA=true ;;
+    stable) STABLE=true ;;
+    beta-*) BETA=true TAG=$(echo "$i" | sed s/beta-//g) ;;
+    stable-*) STABLE=true TAG=$(echo "$i" | sed s/stable-//g) ;;
+    *)
+      echo -e "$ERRORMSG"
+      exit 1
+      ;;
     esac
   done
-  if [[ -z "$GCC" && -z "$CLANG" ]]; then
-    echo "Toolchain not specified"; exit 1
-  elif [[ -n "$GCC" && -n "$CLANG" ]]; then
-    echo "Do not use both GCC and Clang"; exit 1
-  elif [[ -n "$PGO" && -n "$GCOV" ]]; then
-    echo "Do not use both gcov and PGO"; exit 1
-  elif [[ -z "$STABLE" && -z "$BETA" ]]; then
-    echo "Specify stable or beta"; exit 1
-  elif [[ -n "$STABLE" && -n "$BETA" ]]; then
-    echo "Do not use both stable and beta"; exit 1
-  elif [[ -z "$CLANG" && -n "$AOSP" ]]; then
-    echo "Do not use 'aosp' without 'clang'"; exit 1
+
+  if ! $GCC && ! $CLANG; then
+    echo "Toolchain not specified"
+    exit 1
+  elif $GCC && $CLANG; then
+    echo "Do not use both GCC and Clang"
+    exit 1
+  elif $PGO && $GCOV; then
+    echo "Do not use both GCOV and PGO"
+    exit 1
+  elif ! $STABLE && ! $BETA; then
+    echo "Specify stable or beta"
+    exit 1
+  elif $STABLE && $BETA; then
+    echo "Do not use both stable and beta"
+    exit 1
+  elif ! $CLANG && $AOSP; then
+    echo "Do not use 'aosp' without 'clang'"
+    exit 1
   fi
-  if [ "$STABLE" == "true" ] || [ "$BETA" == "true" ]; then
-    USE_LATEST=true
+  if $STABLE || $BETA; then
+    LATEST=true
   fi
 fi
 
@@ -99,48 +122,53 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 
-export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA USE_LATEST
+export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA LATEST TAG
 
 echo "LC_ALL=en_US.UTF-8" | sudo tee -a /etc/environment
 echo "en_US.UTF-8 UTF-8" | sudo tee -a /etc/locale.gen
 echo "LANG=en_US.UTF-8" | sudo tee -a /etc/locale.conf
 sudo locale-gen en_US.UTF-8
-sudo dkpg-reconfigure locales
 
 #
 # Clone Toolchain
-clone_tc(){
+clone_tc() {
   if [ -a "$TOOLCHAIN" ]; then
     echo -e "${YELLOW}===> ${BLUE}Removing old toolchain${WHITE}"
     rm -rf $TOOLCHAIN
   fi
   echo -e "${YELLOW}===> ${BLUE}Downloading Toolchain${WHITE}"
   mkdir -p "$TOOLCHAIN"
-  if [ "$GCC" == "true" ]; then
-    if [ "$USE_LATEST" == "true" ]; then
-      if [ ! -z "$STABLE" ]; then
-        curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
+  if $GCC; then
+    if $LATEST; then
+      if $STABLE; then
+        curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest |
+          grep "browser_download_url" |
+          cut -d '"' -f4 |
+          wget -qO gcc.tar.zst -i -
       else
-        curl -s https://api.github.com/repos/Mengkernel/gcc/releases/latest | grep "browser_download_url" | cut -d '"' -f4 | wget -qO gcc.tar.zst -i -
+        curl -s https://api.github.com/repos/Mengkernel/gcc/releases/latest |
+          grep "browser_download_url" |
+          cut -d '"' -f4 |
+          wget -qO gcc.tar.zst -i -
       fi
     else
-      if [ ! -z "$STABLE" ]; then
-        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${STABLE}/gcc.tar.zst
+      if $STABLE; then
+        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${TAG}/gcc.tar.zst
       else
-        wget -qO gcc.tar.zst https://github.com/Mengkernel/gcc/releases/download/${BETA}/gcc.tar.zst
+        wget -qO gcc.tar.zst https://github.com/Mengkernel/gcc/releases/download/${TAG}/gcc.tar.zst
       fi
     fi
     tar xf gcc.tar.zst -C $TOOLCHAIN
-  elif [ "$AOSP" == "true" ]; then
+  elif $AOSP; then
     wget -qO clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/${AOSP_CLANG_VERSION}.tar.gz
     tar xf clang.tar.gz -C $TOOLCHAIN
   else
-    if [ "$USE_LATEST" == "true" ]; then
-      if [ ! -z "$STABLE" ]; then
+    if $LATEST; then
+      if $STABLE; then
         curl -s https://api.github.com/repos/Diaz1401/clang-stable/releases/latest |
-        grep "browser_download_url" |
-        cut -d '"' -f4 |
-        wget -qO clang.tar.zst -i -
+          grep "browser_download_url" |
+          cut -d '"' -f4 |
+          wget -qO clang.tar.zst -i -
       else
         curl -s https://api.github.com/repos/Mengkernel/clang/releases/latest |
           grep "browser_download_url" |
@@ -148,10 +176,10 @@ clone_tc(){
           wget -qO clang.tar.zst -i -
       fi
     else
-      if [ ! -z "$STABLE" ]; then
-        wget -qO clang.tar.zst https://github.com/Diaz1401/clang-stable/releases/download/${STABLE}/clang.tar.zst
+      if $STABLE; then
+        wget -qO clang.tar.zst https://github.com/Diaz1401/clang-stable/releases/download/${TAG}/clang.tar.zst
       else
-        wget -qO clang.tar.zst https://github.com/Mengkernel/clang/releases/download/${BETA}/clang.tar.zst
+        wget -qO clang.tar.zst https://github.com/Mengkernel/clang/releases/download/${TAG}/clang.tar.zst
       fi
     fi
     tar xf clang.tar.zst -C $TOOLCHAIN
@@ -160,7 +188,7 @@ clone_tc(){
 
 #
 # Clones anykernel
-clone_ak(){
+clone_ak() {
   if [ -a "$AK3" ]; then
     echo -e "${YELLOW}===> ${BLUE}AnyKernel3 exist${WHITE}"
     echo -e "${YELLOW}===> ${BLUE}Try to update repo${WHITE}"
@@ -175,81 +203,66 @@ clone_ak(){
 
 #
 # send_info - sends text to telegram
-send_info(){
-  if [ "$1" == "miui" ]; then
-    CAPTION=$(echo -e \
-    "MIUI Build started
-Date: <code>${BUILD_DATE}</code>
-HEAD: <code>${COMMIT_SHA}</code>
-Commit: <code>${COMMIT}</code>
-Branch: <code>${KERNEL_BRANCH}</code>
-")
-  else
-    CAPTION=$(echo -e \
+send_info() {
+  CAPTION=$(echo -e \
     "Build started
 Date: <code>${BUILD_DATE}</code>
 HEAD: <code>${COMMIT_SHA}</code>
 Commit: <code>${COMMIT}</code>
 Branch: <code>${KERNEL_BRANCH}</code>
 ")
-  fi
   curl -s "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
     -F parse_mode=html \
     -F text="$CAPTION" \
-    -F chat_id="$TELEGRAM_CHAT" > /dev/null 2>&1
+    -F chat_id="$TELEGRAM_CHAT" >/dev/null 2>&1
 }
 
 #
 # send_file - uploads file to telegram
-send_file(){
-  curl -F document=@"$1"  "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+send_file() {
+  curl -F document=@"$1" "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
     -F chat_id="$TELEGRAM_CHAT" \
     -F caption="$2" \
-    -F parse_mode=html > /dev/null 2>&1
+    -F parse_mode=html >/dev/null 2>&1
 }
 
 #
 # send_file_nocap - uploads file to telegram without caption
-send_file_nocap(){
-  curl -F document=@"$1"  "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+send_file_nocap() {
+  curl -F document=@"$1" "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
     -F chat_id="$TELEGRAM_CHAT" \
-    -F parse_mode=html > /dev/null 2>&1
-}
-
-#
-# miui_patch - apply custom patch before build
-miui_patch(){
-  git apply patch/miui-panel-dimension.patch
+    -F parse_mode=html >/dev/null 2>&1
 }
 
 #
 # build_kernel
-build_kernel(){
+build_kernel() {
   cd $KERNEL_DIR
-  if [ "$PGO" != "true" ]; then
+  if ! $PGO; then
     rm -rf out
     mkdir -p out
   fi
-  if [ "$1" == "miui" ]; then
-    miui_patch
-  fi
   BUILD_START=$(date +"%s")
-  if [ "$LTO" == "true" ]; then
-    if [ "$GCC" == "true" ]; then
+  if $LTO; then
+    if $GCC; then
       ./scripts/config --file arch/arm64/configs/cat_defconfig -d LTO_CLANG -e LTO_GCC
     else
       ./scripts/config --file arch/arm64/configs/cat_defconfig -d LTO_GCC -e LTO_CLANG
     fi
   fi
-  if [ "$CAT" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE; fi
-  if [ "$GCOV" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL; fi
-  if [ "$PGO" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO; fi
-  if [ "$DCE" == "true" ]; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION; fi
-  if [ "$GCC" == "true" ]; then
+  if $CAT; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE
+  fi
+  if $GCOV; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL
+  fi
+  if $PGO; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO
+  fi
+  if $DCE; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION
+  fi
+  if $GCC; then
     make -j${NPROC} O=out cat_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
     make -j${NPROC} O=out CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   else
@@ -262,7 +275,7 @@ build_kernel(){
 
 #
 # build_end - creates and sends zip
-build_end(){
+build_end() {
   rm -rf ${AK3}/*.zip ${AK3}/dtb* ${AK3}/Image*
   if [ -a "$KERNEL_IMG_GZ_DTB" ]; then
     mv $KERNEL_IMG_GZ_DTB $AK3
@@ -277,7 +290,7 @@ build_end(){
     exit 1
   fi
   echo -e "${YELLOW}===> ${GREEN}Build success, generating flashable zip...${WHITE}"
-  find ${KERNEL_DIR}/out/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + > $KERNEL_DTB
+  find ${KERNEL_DIR}/out/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + >$KERNEL_DTB
   ls ${KERNEL_DIR}/out/arch/arm64/boot/
   cp $KERNEL_DTBO $AK3
   cp $KERNEL_DTB $AK3
@@ -285,22 +298,27 @@ build_end(){
   DTBO_NAME=${KERNEL_NAME}-DTBO-${DATE}-${COMMIT_SHA}.img
   DTB_NAME=${KERNEL_NAME}-DTB-${DATE}-${COMMIT_SHA}
   ZIP_NAME=${KERNEL_NAME}-${DATE}-${COMMIT_SHA}.zip
-  if [ "$CLANG" == "true" ]; then
-    ZIP_NAME=CLANG-${ZIP_NAME}; fi
-  if [ "$GCC" == "true" ]; then
-    ZIP_NAME=GCC-${ZIP_NAME}; fi
-  if [ "$CAT" == "true" ]; then
-    ZIP_NAME=OPT-${ZIP_NAME}; fi
-  if [ "$LTO" == "true" ]; then
-    ZIP_NAME=LTO-${ZIP_NAME}; fi
-  if [ "$PGO" == "true" ]; then
-    ZIP_NAME=PGO-${ZIP_NAME}; fi
-  if [ "$DCE" == "true" ]; then
-    ZIP_NAME=DCE-${ZIP_NAME}; fi
-  if [ "$GCOV" == "true" ]; then
-    ZIP_NAME=GCOV-${ZIP_NAME}; fi
-  if [ "$1" == "miui" ]; then
-    ZIP_NAME=MIUI-${ZIP_NAME}; fi
+  if $CLANG; then
+    ZIP_NAME=CLANG-${ZIP_NAME}
+  fi
+  if $GCC; then
+    ZIP_NAME=GCC-${ZIP_NAME}
+  fi
+  if $CAT then
+    ZIP_NAME=OPT-${ZIP_NAME}
+  fi
+  if $LTO; then
+    ZIP_NAME=LTO-${ZIP_NAME}
+  fi
+  if $PGO; then
+    ZIP_NAME=PGO-${ZIP_NAME}
+  fi
+  if $DCE; then
+    ZIP_NAME=DCE-${ZIP_NAME}
+  fi
+  if $GCOV; then
+    ZIP_NAME=GCOV-${ZIP_NAME}
+  fi
   zip -r9 $ZIP_NAME * -x .git .github LICENSE README.md
   mv $KERNEL_DTBO ${AK3}/${DTBO_NAME}
   mv $KERNEL_DTB ${AK3}/${DTB_NAME}
@@ -308,11 +326,11 @@ build_end(){
   send_file $ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
   echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
   send_file ${KERNEL_DIR}/out/.config "$ZIP_NAME defconfig"
-#  echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
-#  send_file ${DTBO_NAME}
-#  echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
-#  send_file ${DTB_NAME}
-#  echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
+  #  echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
+  #  send_file ${DTBO_NAME}
+  #  echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
+  #  send_file ${DTB_NAME}
+  #  echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
   send_file $LOG "$ZIP_NAME log"
 }
 
@@ -321,7 +339,7 @@ COMMIT_SHA=$(git rev-parse --short HEAD)
 KERNEL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 BUILD_DATE=$(date)
 CAPTION=$(echo -e \
-"Build started
+  "Build started
 Date: <code>$BUILD_DATE</code>
 HEAD: <code>$COMMIT_SHA</code>
 Commit: <code>$COMMIT</code>
@@ -330,11 +348,10 @@ Branch: <code>$KERNEL_BRANCH</code>
 
 #
 # build_all - run build script
-build_all(){
-  FLAG=$1
-  send_info $FLAG
-  build_kernel $FLAG
-  build_end $FLAG
+build_all() {
+  send_info
+  build_kernel
+  build_end
 }
 
 #
@@ -342,4 +359,3 @@ build_all(){
 clone_tc
 clone_ak
 build_all
-#build_all miui
