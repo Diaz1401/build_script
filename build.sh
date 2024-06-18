@@ -238,7 +238,7 @@ send_file_nocap() {
 # build_kernel
 build_kernel() {
   cd $KERNEL_DIR
-  if ! $PGO; then
+  if ! $PGO_USE; then
     rm -rf out
     mkdir -p out
   fi
@@ -309,9 +309,6 @@ build_end() {
   fi
   if $LTO; then
     ZIP_NAME=LTO-${ZIP_NAME}
-  fi
-  if $PGO; then
-    ZIP_NAME=PGO-${ZIP_NAME}
   fi
   if $DCE; then
     ZIP_NAME=DCE-${ZIP_NAME}
