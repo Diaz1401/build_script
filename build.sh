@@ -3,7 +3,7 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Tue Jun 11 08:10:29 AM WIB 2024"
+REV="Tue Jun 18 07:58:41 AM WIB 2024"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
@@ -113,7 +113,7 @@ COMMIT_SHA=$(git rev-parse --short HEAD)
 KERNEL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 BUILD_DATE=$(date)
 KBUILD_BUILD_USER=Diaz
-PATH=${TOOLCHAIN}/bin:${PATH}
+PATH=${TOOLCHAIN}/bin:${TOOLCHAIN}/aarch64-linux-gnu/bin:${PATH}
 AOSP_CLANG_VERSION="clang-r510928"
 # Colors
 WHITE='\033[0m'
@@ -304,7 +304,7 @@ build_end() {
   if $GCC; then
     ZIP_NAME=GCC-${ZIP_NAME}
   fi
-  if $CAT then
+  if $CAT; then
     ZIP_NAME=OPT-${ZIP_NAME}
   fi
   if $LTO; then
