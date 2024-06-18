@@ -3,7 +3,7 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Tue Jun 18 07:58:41 AM WIB 2024"
+REV="Tue Jun 18 08:44:04 AM WIB 2024"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
@@ -15,9 +15,9 @@ Available argument:\n\
   gcc             use GCC\n\
   opt             enable cat_optimize\n\
   lto             enable LTO\n\
-  pgo             enable PGO\n\~
+  pgo_gen         enable profiling\n\
+  pgo_use         enable PGO\n\
   dce             enable dead code and data elimination\n\
-  gcov            enable gcov profiling\n\
   beta            download experimental toolchain\n\
   stable          download stable toolchain\n\
   beta-TAG        spesific experimental toolchain tag\n\
@@ -34,10 +34,10 @@ AOSP=false
 GCC=false
 CAT=false
 LTO=false
-PGO=false
+PGO_GEN=false
+PGO_USE=false
 DCE=false
 TAG=""
-GCOV=false
 BETA=false
 STABLE=false
 LATEST=false
@@ -53,9 +53,9 @@ else
     gcc) GCC=true ;;
     opt) CAT=true ;;
     lto) LTO=true ;;
-    pgo) PGO=true ;;
+    pgo_gen) PGO_GEN=true ;;
+    pgo_use) PGO_USE=true ;;
     dce) DCE=true ;;
-    gcov) GCOV=true ;;
     beta) BETA=true ;;
     stable) STABLE=true ;;
     beta-*) BETA=true TAG=$(echo "$i" | sed s/beta-//g) ;;
@@ -73,8 +73,8 @@ else
   elif $GCC && $CLANG; then
     echo "Do not use both GCC and Clang"
     exit 1
-  elif $PGO && $GCOV; then
-    echo "Do not use both GCOV and PGO"
+  elif $PGO_GEN && $PGO_USE; then
+    echo "Do not use both PGO_GEN & PGO_USE"
     exit 1
   elif ! $STABLE && ! $BETA; then
     echo "Specify stable or beta"
@@ -122,7 +122,7 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 
-export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO GCOV STABLE BETA LATEST TAG
+export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO_GEN PGO_USE STABLE BETA LATEST TAG
 
 echo "LC_ALL=en_US.UTF-8" | sudo tee -a /etc/environment
 echo "en_US.UTF-8 UTF-8" | sudo tee -a /etc/locale.gen
@@ -253,11 +253,11 @@ build_kernel() {
   if $CAT; then
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e CAT_OPTIMIZE
   fi
-  if $GCOV; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e GCOV_KERNEL -e GCOV_PROFILE_ALL
+  if $PGO_GEN; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -d PGO_USE -e PGO_GEN
   fi
-  if $PGO; then
-    ./scripts/config --file arch/arm64/configs/cat_defconfig -e PGO
+  if $PGO_USE; then
+    ./scripts/config --file arch/arm64/configs/cat_defconfig -d PGO_GEN -e PGO_USE
   fi
   if $DCE; then
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION
@@ -316,8 +316,11 @@ build_end() {
   if $DCE; then
     ZIP_NAME=DCE-${ZIP_NAME}
   fi
-  if $GCOV; then
-    ZIP_NAME=GCOV-${ZIP_NAME}
+  if $PGO_GEN; then
+    ZIP_NAME=PGO_GEN-${ZIP_NAME}
+  fi
+  if $PGO_USE; then
+    ZIP_NAME=PGO_USE-${ZIP_NAME}
   fi
   zip -r9 $ZIP_NAME * -x .git .github LICENSE README.md
   mv $KERNEL_DTBO ${AK3}/${DTBO_NAME}
