@@ -40,7 +40,7 @@ DCE=false
 TAG=""
 BETA=false
 STABLE=false
-LATEST=false
+LATEST=true
 
 if [ -z "$ARG" ]; then
   echo -e "$ERRORMSG"
@@ -58,8 +58,8 @@ else
     dce) DCE=true ;;
     beta) BETA=true ;;
     stable) STABLE=true ;;
-    beta-*) BETA=true TAG=$(echo "$i" | sed s/beta-//g) ;;
-    stable-*) STABLE=true TAG=$(echo "$i" | sed s/stable-//g) ;;
+    beta-*) LATEST=false BETA=true TAG=$(echo "$i" | sed s/beta-//g) ;;
+    stable-*) LATEST=false STABLE=true TAG=$(echo "$i" | sed s/stable-//g) ;;
     *)
       echo -e "$ERRORMSG"
       exit 1
@@ -85,9 +85,6 @@ else
   elif ! $CLANG && $AOSP; then
     echo "Do not use 'aosp' without 'clang'"
     exit 1
-  fi
-  if $STABLE || $BETA; then
-    LATEST=true
   fi
 fi
 
