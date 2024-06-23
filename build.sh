@@ -3,12 +3,12 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Tue Jun 18 08:44:04 AM WIB 2024"
+REV="Sun Jun 23 10:47:36 AM WIB 2024"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
 ERRORMSG="\
-Usage: ./build-gcc.sh argument\n\
+Usage: ./build.sh argument\n\
 Available argument:\n\
   clang           use Clang/LLVM\n\
   aosp            use Android Clang/LLVM (use with 'clang' option)\n\
@@ -224,11 +224,23 @@ send_file() {
 }
 
 #
-# send_file_nocap - uploads file to telegram without caption
-send_file_nocap() {
-  curl -F document=@"$1" "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+# send_files - uploads multiple files to telegram in one message
+send_files() {
+  i=1
+  for files in $@; do
+    if [ $i -eq 1 ]; then
+      attach="{\"type\": \"document\", \"media\": \"attach://file$i\"}"
+      arg="-F file$i=@$files"
+    else
+      attach="$attach, {\"type\": \"document\", \"media\": \"attach://file$i\"}"
+      arg="$arg -F file$i=@$files"
+    fi
+    ((i++))
+  done
+  curl "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMediaGroup" \
     -F chat_id="$TELEGRAM_CHAT" \
-    -F parse_mode=html >/dev/null 2>&1
+    -F "media=[$attach]" \
+    $arg >/dev/null 2>&1
 }
 
 #
@@ -283,7 +295,7 @@ build_end() {
   else
     echo -e "${YELLOW}===> ${RED}Build failed, sad${WHITE}"
     echo -e "${YELLOW}===> ${GREEN}Send build log to Telegram${WHITE}"
-    send_file $LOG "$ZIP_NAME log"
+    send_files $LOG
     exit 1
   fi
   echo -e "${YELLOW}===> ${GREEN}Build success, generating flashable zip...${WHITE}"
@@ -316,19 +328,12 @@ build_end() {
   if $PGO_USE; then
     ZIP_NAME=PGO_USE-${ZIP_NAME}
   fi
-  zip -r9 $ZIP_NAME * -x .git .github LICENSE README.md
-  mv $KERNEL_DTBO ${AK3}/${DTBO_NAME}
-  mv $KERNEL_DTB ${AK3}/${DTB_NAME}
+  zip -r9 DTBO-$ZIP_NAME * -x .git .github LICENSE README.md dtb*
+  zip -r9 KERNEL-$ZIP_NAME * -x .git .github LICENSE README.md *Image* *.zip
   echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
-  send_file $ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
+  send_file KERNEL-$ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
   echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
-  send_file ${KERNEL_DIR}/out/.config "$ZIP_NAME defconfig"
-  #  echo -e "${YELLOW}===> ${BLUE}Send dtbo.img to Telegram${WHITE}"
-  #  send_file ${DTBO_NAME}
-  #  echo -e "${YELLOW}===> ${BLUE}Send dtb to Telegram${WHITE}"
-  #  send_file ${DTB_NAME}
-  #  echo -e "${YELLOW}===> ${RED}Send build log to Telegram${WHITE}"
-  send_file $LOG "$ZIP_NAME log"
+  send_files DTBO-$ZIP_NAME $LOG ${KERNEL_DIR}/out/.config
 }
 
 COMMIT=$(git log --pretty=format:"%s" -1)
