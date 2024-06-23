@@ -328,8 +328,8 @@ build_end() {
   if $PGO_USE; then
     ZIP_NAME=PGO_USE-${ZIP_NAME}
   fi
-  zip -r9 DTBO-$ZIP_NAME * -x .git .github LICENSE README.md dtb*
-  zip -r9 KERNEL-$ZIP_NAME * -x .git .github LICENSE README.md *Image* *.zip
+  zip -r9 KERNEL-$ZIP_NAME * -x .git .github LICENSE README.md dtb*
+  zip -r9 DTBO-$ZIP_NAME * -x .git .github LICENSE README.md *Image* *.zip
   echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
   send_file KERNEL-$ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
   echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
