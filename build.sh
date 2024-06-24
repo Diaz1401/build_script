@@ -3,7 +3,7 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Sun Jun 23 10:47:36 AM WIB 2024"
+REV="Mon Jun 24 07:59:47 PM WIB 2024"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
@@ -18,6 +18,7 @@ Available argument:\n\
   pgo_gen         enable profiling\n\
   pgo_use         enable PGO\n\
   dce             enable dead code and data elimination\n\
+  keep            keep toolchain\n\
   beta            download experimental toolchain\n\
   stable          download stable toolchain\n\
   beta-TAG        spesific experimental toolchain tag\n\
@@ -41,6 +42,7 @@ TAG=""
 BETA=false
 STABLE=false
 LATEST=true
+KEEP=false
 
 if [ -z "$ARG" ]; then
   echo -e "$ERRORMSG"
@@ -56,6 +58,7 @@ else
     pgo_gen) PGO_GEN=true ;;
     pgo_use) PGO_USE=true ;;
     dce) DCE=true ;;
+    keep) KEEP=true ;;
     beta) BETA=true ;;
     stable) STABLE=true ;;
     beta-*) LATEST=false BETA=true TAG=$(echo "$i" | sed s/beta-//g) ;;
@@ -129,7 +132,9 @@ sudo locale-gen en_US.UTF-8
 #
 # Clone Toolchain
 clone_tc() {
-  if [ -a "$TOOLCHAIN" ]; then
+  if $KEEP; then
+    echo -e "${YELLOW}===> ${BLUE}Keep existing toolchain${WHITE}"
+  else
     echo -e "${YELLOW}===> ${BLUE}Removing old toolchain${WHITE}"
     rm -rf $TOOLCHAIN
   fi
