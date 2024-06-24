@@ -252,10 +252,6 @@ send_files() {
 # build_kernel
 build_kernel() {
   cd $KERNEL_DIR
-  if ! $PGO_USE; then
-    rm -rf out
-    mkdir -p out
-  fi
   BUILD_START=$(date +"%s")
   if $LTO; then
     if $GCC; then
