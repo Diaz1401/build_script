@@ -3,7 +3,7 @@
 # Copyright (c) 2021 CloudedQuartz
 # Copyright (c) 2021-2024 Diaz1401
 
-REV="Mon Jun 24 07:59:47 PM WIB 2024"
+REV="Wed Jun 26 03:05:38 PM WIB 2024"
 echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
 ARG=$@
@@ -24,11 +24,11 @@ Available argument:\n\
   beta-TAG        spesific experimental toolchain tag\n\
   stable-TAG      spesific stable toolchain tag\n\n\
 valid stable toolchain tag:\n\
-  https://github.com/Diaz1401/clang-stable/releases\n\
-  https://github.com/Diaz1401/gcc-stable/releases\n\
+  https://github.com/mengkernel/clang-stable/releases\n\
+  https://github.com/mengkernel/gcc-stable/releases\n\
 valid experimental toolchain tag:\n\
-  https://github.com/Mengkernel/clang/releases\n\
-  https://github.com/Mengkernel/gcc/releases"
+  https://github.com/mengkernel/clang/releases\n\
+  https://github.com/mengkernel/gcc/releases"
 
 CLANG=false
 AOSP=false
@@ -143,21 +143,21 @@ clone_tc() {
   if $GCC; then
     if $LATEST; then
       if $STABLE; then
-        curl -s https://api.github.com/repos/Diaz1401/gcc-stable/releases/latest |
+        curl -s https://api.github.com/repos/mengkernel/gcc-stable/releases/latest |
           grep "browser_download_url" |
           cut -d '"' -f4 |
           wget -qO gcc.tar.zst -i -
       else
-        curl -s https://api.github.com/repos/Mengkernel/gcc/releases/latest |
+        curl -s https://api.github.com/repos/mengkernel/gcc/releases/latest |
           grep "browser_download_url" |
           cut -d '"' -f4 |
           wget -qO gcc.tar.zst -i -
       fi
     else
       if $STABLE; then
-        wget -qO gcc.tar.zst https://github.com/Diaz1401/gcc-stable/releases/download/${TAG}/gcc.tar.zst
+        wget -qO gcc.tar.zst https://github.com/mengkernel/gcc-stable/releases/download/${TAG}/gcc.tar.zst
       else
-        wget -qO gcc.tar.zst https://github.com/Mengkernel/gcc/releases/download/${TAG}/gcc.tar.zst
+        wget -qO gcc.tar.zst https://github.com/mengkernel/gcc/releases/download/${TAG}/gcc.tar.zst
       fi
     fi
     tar xf gcc.tar.zst -C $TOOLCHAIN
@@ -167,21 +167,21 @@ clone_tc() {
   else
     if $LATEST; then
       if $STABLE; then
-        curl -s https://api.github.com/repos/Diaz1401/clang-stable/releases/latest |
+        curl -s https://api.github.com/repos/mengkernel/clang-stable/releases/latest |
           grep "browser_download_url" |
           cut -d '"' -f4 |
           wget -qO clang.tar.zst -i -
       else
-        curl -s https://api.github.com/repos/Mengkernel/clang/releases/latest |
+        curl -s https://api.github.com/repos/mengkernel/clang/releases/latest |
           grep "browser_download_url" |
           cut -d '"' -f4 |
           wget -qO clang.tar.zst -i -
       fi
     else
       if $STABLE; then
-        wget -qO clang.tar.zst https://github.com/Diaz1401/clang-stable/releases/download/${TAG}/clang.tar.zst
+        wget -qO clang.tar.zst https://github.com/mengkernel/clang-stable/releases/download/${TAG}/clang.tar.zst
       else
-        wget -qO clang.tar.zst https://github.com/Mengkernel/clang/releases/download/${TAG}/clang.tar.zst
+        wget -qO clang.tar.zst https://github.com/mengkernel/clang/releases/download/${TAG}/clang.tar.zst
       fi
     fi
     tar xf clang.tar.zst -C $TOOLCHAIN
@@ -199,7 +199,7 @@ clone_ak() {
     cd -
   else
     echo -e "${YELLOW}===> ${BLUE}Cloning AnyKernel3${WHITE}"
-    git clone -q --depth=1 -b alioth https://github.com/Mengkernel/AnyKernel3.git $AK3
+    git clone -q --depth=1 -b alioth https://github.com/mengkernel/AnyKernel3.git $AK3
   fi
 }
 
