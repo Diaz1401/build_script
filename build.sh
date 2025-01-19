@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 # Copyright (c) 2021 CloudedQuartz
-# Copyright (c) 2021-2024 Diaz1401
+# Copyright (c) 2021-2025 Diaz1401
 
-REV="Wed Jun 26 03:05:38 PM WIB 2024"
-echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
+REV="Sun 19 Jan 2025 10:18:25 WIB"
 
 ARG=$@
 ERRORMSG="\
 Usage: ./build.sh argument\n\
 Available argument:\n\
+  local           build kernel in local machine\n\
   clang           use Clang/LLVM\n\
   aosp            use Android Clang/LLVM (use with 'clang' option)\n\
   gcc             use GCC\n\
@@ -43,6 +43,7 @@ BETA=false
 STABLE=false
 LATEST=true
 KEEP=false
+LOCAL=false
 
 if [ -z "$ARG" ]; then
   echo -e "$ERRORMSG"
@@ -50,6 +51,7 @@ if [ -z "$ARG" ]; then
 else
   for i in $ARG; do
     case "$i" in
+    local) LOCAL=true ;;
     clang) CLANG=true ;;
     aosp) AOSP=true ;;
     gcc) GCC=true ;;
@@ -71,7 +73,7 @@ else
   done
 
   if ! $GCC && ! $CLANG; then
-    echo "Toolchain not specified"
+    echo "Toolchain not specified (clang/gcc)"
     exit 1
   elif $GCC && $CLANG; then
     echo "Do not use both GCC and Clang"
@@ -79,13 +81,13 @@ else
   elif $PGO_GEN && $PGO_USE; then
     echo "Do not use both PGO_GEN & PGO_USE"
     exit 1
-  elif ! $STABLE && ! $BETA; then
-    echo "Specify stable or beta"
+  elif ! $STABLE && ! $BETA && ! $LOCAL; then
+    echo "Specify stable or beta (beta/stable/beta-TAG/stable-TAG)"
     exit 1
-  elif $STABLE && $BETA; then
+  elif $STABLE && $BETA && ! $LOCAL; then
     echo "Do not use both stable and beta"
     exit 1
-  elif ! $CLANG && $AOSP; then
+  elif ! $CLANG && $AOSP && ! $LOCAL; then
     echo "Do not use 'aosp' without 'clang'"
     exit 1
   fi
@@ -96,15 +98,16 @@ git config --global --add safe.directory '*'
 
 KERNEL_NAME=Kucing
 KERNEL_DIR=$(pwd)
+KERNEL_OUT_DIR=${KERNEL_DIR}/out
 NPROC=$(nproc --all)
 AK3=${KERNEL_DIR}/AnyKernel3
-TOOLCHAIN=${KERNEL_DIR}/toolchain
-LOG=${KERNEL_DIR}/log.txt
-KERNEL_DTB=${KERNEL_DIR}/out/arch/arm64/boot/dtb
-KERNEL_IMG=${KERNEL_DIR}/out/arch/arm64/boot/Image
-KERNEL_IMG_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image-dtb
-KERNEL_IMG_GZ_DTB=${KERNEL_DIR}/out/arch/arm64/boot/Image.gz-dtb
-KERNEL_DTBO=${KERNEL_DIR}/out/arch/arm64/boot/dtbo.img
+TOOLCHAIN=${KERNEL_OUT_DIR}/toolchain
+LOG=${KERNEL_OUT_DIR}/log.txt
+KERNEL_DTB=${KERNEL_OUT_DIR}/arch/arm64/boot/dtb
+KERNEL_IMG=${KERNEL_OUT_DIR}/arch/arm64/boot/Image
+KERNEL_IMG_DTB=${KERNEL_OUT_DIR}/arch/arm64/boot/Image-dtb
+KERNEL_IMG_GZ_DTB=${KERNEL_OUT_DIR}/arch/arm64/boot/Image.gz-dtb
+KERNEL_DTBO=${KERNEL_OUT_DIR}/arch/arm64/boot/dtbo.img
 TELEGRAM_CHAT=-1001180467256
 #unused TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
 DATE=$(date +"%Y%m%d")
@@ -114,7 +117,7 @@ KERNEL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 BUILD_DATE=$(date)
 KBUILD_BUILD_USER=Diaz
 PATH=${TOOLCHAIN}/bin:${TOOLCHAIN}/aarch64-linux-gnu/bin:${PATH}
-AOSP_CLANG_VERSION="clang-r510928"
+AOSP_CLANG_VERSION="clang-r522817"
 # Colors
 WHITE='\033[0m'
 RED='\033[1;31m'
@@ -122,12 +125,9 @@ GREEN='\033[1;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[1;34m'
 
-export NPROC KERNEL_NAME KERNEL_DIR AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO_GEN PGO_USE STABLE BETA LATEST TAG
+echo -e "${YELLOW}Revision ===> ${BLUE}${REV}${WHITE}"
 
-echo "LC_ALL=en_US.UTF-8" | sudo tee -a /etc/environment
-echo "en_US.UTF-8 UTF-8" | sudo tee -a /etc/locale.gen
-echo "LANG=en_US.UTF-8" | sudo tee -a /etc/locale.conf
-sudo locale-gen en_US.UTF-8
+export NPROC KERNEL_NAME KERNEL_DIR KERNEL_OUT_DIR LOCAL AK3 TOOLCHAIN LOG KERNEL_DTB KERNEL_IMG KERNEL_IMG_DTB KERNEL_IMG_GZ_DTB KERNEL_DTBO TELEGRAM_CHAT DATE COMMIT COMMIT_SHA KERNEL_BRANCH BUILD_DATE KBUILD_BUILD_USER PATH WHITE RED GREEN YELLOW BLUE CLANG GCC CAT LTO PGO_GEN PGO_USE STABLE BETA LATEST TAG
 
 #
 # Clone Toolchain
@@ -273,14 +273,24 @@ build_kernel() {
     ./scripts/config --file arch/arm64/configs/cat_defconfig -e LD_DEAD_CODE_DATA_ELIMINATION
   fi
   if $GCC; then
-    make -j${NPROC} O=out cat_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=${KERNEL_OUT_DIR} cat_defconfig CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=${KERNEL_OUT_DIR} CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   else
-    make -j${NPROC} O=out cat_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
-    make -j${NPROC} O=out LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=${KERNEL_OUT_DIR} cat_defconfig LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
+    make -j${NPROC} O=${KERNEL_OUT_DIR} LLVM=1 LLVM_IAS=1 CROSS_COMPILE=aarch64-linux-gnu- |& tee -a $LOG
   fi
   BUILD_END=$(date +"%s")
   DIFF=$((BUILD_END - BUILD_START))
+  if $LOCAL && [ -a $AK3 ]; then
+    rm -rf ${AK3}/*.zip ${AK3}/dtb* ${AK3}/Image*
+    find ${KERNEL_OUT_DIR}/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + >$KERNEL_DTB
+    cp ${KERNEL_IMG}* $AK3
+    cp $KERNEL_DTBO $AK3
+    cp $KERNEL_DTB $AK3
+    cd $AK3
+    zip -r9 KERNEL-TEST * -x .git* LICENSE README.md
+    echo -e "${YELLOW}===> ${GREEN}Zip file created at ${AK3}/KERNEL-TEST.zip${WHITE}"
+  fi
 }
 
 #
@@ -300,8 +310,8 @@ build_end() {
     exit 1
   fi
   echo -e "${YELLOW}===> ${GREEN}Build success, generating flashable zip...${WHITE}"
-  find ${KERNEL_DIR}/out/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + >$KERNEL_DTB
-  ls ${KERNEL_DIR}/out/arch/arm64/boot/
+  find ${KERNEL_OUT_DIR}/arch/arm64/boot/dts/vendor/qcom -name '*.dtb' -exec cat {} + >$KERNEL_DTB
+  ls ${KERNEL_OUT_DIR}/arch/arm64/boot/
   cp $KERNEL_DTBO $AK3
   cp $KERNEL_DTB $AK3
   cd $AK3
@@ -334,7 +344,7 @@ build_end() {
   echo -e "${YELLOW}===> ${BLUE}Send kernel to Telegram${WHITE}"
   send_file KERNEL-$ZIP_NAME "Time taken: <code>$((DIFF / 60))m $((DIFF % 60))s</code>"
   echo -e "${YELLOW}===> ${WHITE}Zip name: ${GREEN}${ZIP_NAME}"
-  send_files DTBO-$ZIP_NAME $LOG ${KERNEL_DIR}/out/.config
+  send_files DTBO-$ZIP_NAME $LOG ${KERNEL_OUT_DIR}/.config
 }
 
 COMMIT=$(git log --pretty=format:"%s" -1)
@@ -352,13 +362,19 @@ Branch: <code>$KERNEL_BRANCH</code>
 #
 # build_all - run build script
 build_all() {
-  send_info
+  if ! $LOCAL; then
+    send_info
+  fi
   build_kernel
-  build_end
+  if ! $LOCAL; then
+    build_end
+  fi
 }
 
 #
 # compile time
-clone_tc
-clone_ak
+if ! $LOCAL; then
+  clone_tc
+  clone_ak
+fi
 build_all
